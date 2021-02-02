@@ -1,0 +1,8 @@
+exportPattern("^[[:alpha:]]+")
+importFrom("graphics", "axis", "legend", "points")
+importFrom("methods", "new")
+importFrom("stats", "coefficients", "lm", "optim", "rnorm","predict")
+importFrom("foreach", "foreach", "%dopar%")
+importFrom("iterators", "iter")
+importFrom("parallel","detectCores","makeCluster","stopCluster")
+importFrom("doParallel","registerDoParallel")

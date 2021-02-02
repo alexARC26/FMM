@@ -1,0 +1,71 @@
+\name{plotFMM}
+\alias{plotFMM}
+
+\title{Plot fitted FMM models}
+
+\usage{
+plotFMM(objFMM, components = FALSE, plotAlongPeriods = FALSE,
+		    use_ggplot2 = FALSE, legendInComponentsPlot = TRUE, textExtra = "")
+}
+
+\description{
+  \code{plotFMM()} is used to plot fitted FMM models. The function can either plot the fitted model against the data
+  or each of the components of the model separately. Optionally \code{'ggplot2'} can be used as graphic library.
+}
+
+\arguments{
+	\item{objFMM}{Object of class \code{'FMM'}.}
+	\item{components}{A logical value indicating if the centered wave components of the model should be separately
+	                  plotted (case where it is \code{TRUE}). If \code{FALSE}, the default, the fitted FMM model
+	                  along with the observed data is plotted.}
+	\item{plotAlongPeriods}{A logical value indicating if more than one period should be plotted in the plots
+	                        by default. Its default value is \code{FALSE}.}
+	\item{use_ggplot2}{A logical value. If \code{FALSE}, the default, R base graphics are used. If \code{TRUE},
+	                   \code{'ggplot2'} library is used as graphics engine.}
+	\item{legendInComponentsPlot}{A logical value indicating whether the legend should be plotted in the components
+	                              plot. By defaults it is \code{TRUE}.}
+	\item{textExtra}{A character vector for extra text to be added to the titles of the plots.}
+}
+
+\details{
+	\code{plotFMM()} can generate two types of plots: the basic plot compares the fitted model against the original data while the components plot represents separately the centered waves of the model (if the argument \code{components} is \code{TRUE}).
+
+	The function is also capable of plotting multiple periods if the data has more than one, as is the case in many applications such as chronobiology. In this case, the argument \code{plotAlongPeriods} should be \code{TRUE}. In the case of components plots the value taken by the latter argument is ignored as they are plotted along just one period.
+
+	While, by default, plots are created using base R graphics, \code{'ggplot2'} can also be used for more aesthetic and customizable plots. Optional arguments \code{legendInComponentsPlot} and \code{textExtra} serve to control, respectively, whether a legend to the components plot should be added and adding extra text to the plot's title.
+}
+
+\value{
+	None if base R graphics are used, a named \code{ggplot2} list if \code{'ggplot2'} is used.
+}
+
+\examples{
+# Simulates an scenario in which an FMM model is suitable,
+res <- generate_FMM(2,3,1.5,2.3,0.1,outvalues = TRUE,sigmaNoise = 0.3, plot=FALSE)
+# then a FMM model is fitted to the data.
+fit <- fitFMM(res$y, lengthAlphaGrid=24,lengthOmegaGrid=14)
+plotFMM(fit)
+
+# Components plot of FMM Model fitted to neuronal data with various optional aesthetics
+data("neuronalSpike")
+fittedFMM2<-fitFMM(neuronalSpike, nback=2,
+                   lengthAlphaGrid = 24,lengthOmegaGrid = 10, numReps = 1)
+
+plotFMM(fittedFMM2, components = TRUE)
+plotFMM(fittedFMM2, components = TRUE,
+	       legendInComponentsPlot = FALSE,
+	       textExtra = "Neuronal Data")
+
+# With ggplot2, customizable plots can be created,
+library(ggplot2)
+# standard plots
+plotFMM(fittedFMM2, use_ggplot2 = TRUE)
+# and components plots
+plotFMM(fittedFMM2, components = TRUE, use_ggplot2 = TRUE)
+
+# Plot of fitted model to more than one period.
+data("mouseGeneExp")
+fittedFMM2<-fitFMM(mouseGeneExp, nPeriods = 2,
+                   lengthAlphaGrid = 24,lengthOmegaGrid = 10)
+plotFMM(fittedFMM2, plotAlongPeriods = TRUE)
+}
