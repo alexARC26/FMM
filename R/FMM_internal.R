@@ -21,33 +21,35 @@
 #    timePoints: one single period time points.
 # Returns a 6-length numerical vector: M, A, alpha, beta, omega and RSS
 ###############################################################
-step1FMM <- function(alphaOmega, vData, timePoints) {
+step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
 
-  alpha <- alphaOmega[1]
-  omega <- alphaOmega[2]
+  alphaParameter = alphaOmegaParameters[1]
+  omegaParameter = alphaOmegaParameters[2]
+  mobiusTerm <- 2*atan(omegaParameter*tan((timePoints-alphaParameter)/2))
+  tStar <- alphaParameter + mobiusTerm
 
-  parteMobius <- 2*atan(omega*tan((timePoints-alpha)/2))
-  t_star <- alpha + parteMobius
+  ## VERSION CON EXPRESION EXACTA DE BETA0, BETA1, BETA2
 
-  # cosinor model with fixed alpha and omega
-  xx<-cos(t_star)
-  zz<-sin(t_star)
-  fit<-lm((vData)~xx+zz)
-  M <-fit$coefficients[1] # intercept
-  bb<-fit$coefficients[2] # cos coefficient
-  gg<-fit$coefficients[3] # sin coefficient
-  phiEst<-atan2(-gg,bb)   # acrophase (phi)
-  A<-sqrt(bb^2+gg^2)      # wave amplitude
-  beta <- (phiEst+alpha)%%(2*pi)
+  costStar <- cos(tStar)
+  sentstar <- sin(tStar)
+  covMatrix <- cov(cbind(vData, costStar, sentstar))
+  denominator <- covMatrix[2,2]*covMatrix[3,3]-covMatrix[2,3]^2
+  cosCoeff <- (covMatrix[1, 2]*covMatrix[3,3]-covMatrix[1,3]*covMatrix[2,3])/denominator
+  sinCoeff <- (covMatrix[1, 3]*covMatrix[2,2]-covMatrix[1,2]*covMatrix[2,3])/denominator
+  mParameter <- mean(vData)-cosCoeff*mean(costStar)-sinCoeff*mean(sentstar)
 
-  dataReg<-cos(beta+parteMobius) # Mobius result without intercept and amplitude
+  ## VERSION CON RcppArmadillo
+  phiEst<-atan2(-sinCoeff,cosCoeff)   # acrophase (phi)
+  aParameter<-sqrt(cosCoeff^2+sinCoeff^2)      # wave amplitude
+  betaParameter <- (phiEst+alphaParameter)%%(2*pi)
 
-  adj0<-M+A*dataReg # Mobius regression
-  RSS<-sum((vData-adj0)^2)/length(timePoints) # residual sum of squares
+  mobiusModel<-mParameter+aParameter*cos(betaParameter+mobiusTerm) # Mobius regression
 
-  devolver <- c(M,A,alpha,beta,omega,RSS)
-  return(devolver)
+  # residualSS, residualSumSq, otros posibles nombres...
+  residualSS<-sum((vData-mobiusModel)^2)/length(timePoints) # residual sum of squares
 
+  return(c(mParameter,aParameter,alphaParameter,betaParameter,
+           omegaParameter,residualSS))
 }
 
 
