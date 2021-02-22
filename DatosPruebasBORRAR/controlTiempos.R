@@ -31,8 +31,6 @@ library("profvis")
 
 profvis(fitFMM(vData = data1$Voltage))
 
-microbenchmark(ftest1(vData = data1$Voltage), times = 20, unit = "s")
-
 
 
 

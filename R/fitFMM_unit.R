@@ -22,7 +22,12 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
   # alpha and omega are fixed and cosinor model is used to calculate the rest of the parameters.
   # step1FMM function is used to make this estimate
   grid <- expand.grid(alphaGrid,omegaGrid)
-  step1 <- t(apply(grid,1,step1FMM, vData=vData, timePoints=timePoints))
+  requireNamespace("doParallel", quietly = TRUE)
+  nCores <- detectCores() - 1
+  registerDoParallel(cores = nCores)
+  parallelCluster <- makeCluster(nCores)
+  step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = step1FMM, vData=vData, timePoints=timePoints))
+  stopCluster(parallelCluster)
   colnames(step1) <- c("M","A","alpha","beta","omega","RSS")
 
   # We find the optimal initial parameters,
