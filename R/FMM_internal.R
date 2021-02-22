@@ -38,14 +38,12 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
   sinCoeff <- (covMatrix[1, 3]*covMatrix[2,2]-covMatrix[1,2]*covMatrix[2,3])/denominator
   mParameter <- mean(vData)-cosCoeff*mean(costStar)-sinCoeff*mean(sentstar)
 
-  ## VERSION CON RcppArmadillo
   phiEst<-atan2(-sinCoeff,cosCoeff)   # acrophase (phi)
   aParameter<-sqrt(cosCoeff^2+sinCoeff^2)      # wave amplitude
   betaParameter <- (phiEst+alphaParameter)%%(2*pi)
 
-  mobiusModel<-mParameter+aParameter*cos(betaParameter+mobiusTerm) # Mobius regression
 
-  # residualSS, residualSumSq, otros posibles nombres...
+  mobiusModel<-mParameter+aParameter*cos(betaParameter+mobiusTerm) # Mobius regression
   residualSS<-sum((vData-mobiusModel)^2)/length(timePoints) # residual sum of squares
 
   return(c(mParameter,aParameter,alphaParameter,betaParameter,
@@ -65,7 +63,7 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
 bestStep1 <- function(vData,step1){
 
   # step1 in decreasing order by RSS
-  ordenMinRSS <- order(step1[,"RSS"])
+  orderedModelParameters <- order(step1[,"RSS"])
 
   maxVData <- max(vData)
   minVData <- min(vData)
@@ -73,39 +71,34 @@ bestStep1 <- function(vData,step1){
 
   # iterative search: go through rows ordered step 1
   #    until the first one that verifies the stability conditions
-  condicionContinuar <- TRUE
+  bestModelFound <- FALSE
   i <- 1
-  while(condicionContinuar){
+  while(!bestModelFound){
     # parameters
-    M <- step1[ordenMinRSS[i],"M"]
-    A <- step1[ordenMinRSS[i],"A"]
-    alpha <- step1[ordenMinRSS[i],"alpha"]
-    beta <- step1[ordenMinRSS[i],"beta"]
-    omega <- step1[ordenMinRSS[i],"omega"]
-    sigma <- sqrt(step1[ordenMinRSS[i],"RSS"]*n/(n-5))
+    mParameter <- step1[orderedModelParameters[i],"M"]
+    aParameter <- step1[orderedModelParameters[i],"A"]
+    alphaParameter <- step1[orderedModelParameters[i],"alpha"]
+    betaParameter <- step1[orderedModelParameters[i],"beta"]
+    omegaParameter <- step1[orderedModelParameters[i],"omega"]
+    sigma <- sqrt(step1[orderedModelParameters[i],"RSS"]*n/(n-5))
 
     # stability conditions
-    maxi <- M + A
-    mini <- M - A
-    rest1 <- maxi <= maxVData+1.96*sigma
-    rest2 <- mini >= minVData-1.96*sigma
+    amplitudeUpperBound <- mParameter + aParameter
+    amplitudeLowerBound <- mParameter - aParameter
+    rest1 <- amplitudeUpperBound <= maxVData+1.96*sigma
+    rest2 <- amplitudeLowerBound >= minVData-1.96*sigma
 
     # it is necessary to check that there are no NA,
     # because it can be an extreme solution
-    if(is.na(rest1)) rest1 <- FALSE
-    if(is.na(rest2)) rest2 <- FALSE
-
-    if(rest1 & rest2){
-      condicionContinuar <- FALSE
-    } else {
+    if(is.na(rest1) | is.na(rest2))
       i <- i+1
-    }
+    else
+      bestModelFound <- TRUE
 
-    if(i > nrow(step1)){
+    if(i > nrow(step1))
       return(NULL)
-    }
   }
-  return(step1[ordenMinRSS[i],])
+  return(step1[orderedModelParameters[i],])
 
 }
 
@@ -121,12 +114,10 @@ step2FMM <- function(parameters, vData, timePoints, omegaUpperBound){
 
   n <- length(timePoints)
 
-  # FMM model
+  # FMM model and residual sum of squares
   modelFMM <- parameters[1] + parameters[2] *
     cos(parameters[4] + 2*atan2(parameters[5] * sin((timePoints - parameters[3])/2),
                                 cos((timePoints - parameters[3])/2)))
-
-  # Residual sum of squares
   residualSS <- sum((modelFMM - vData)^2)/n
   sigma <- sqrt(residualSS*n/(n-5))
 
@@ -138,15 +129,14 @@ step2FMM <- function(parameters, vData, timePoints, omegaUpperBound){
   rest2 <- amplitudeLowerBound >= min(vData) - 1.96*sigma
 
   # Other integrity conditions that must be met
-  rest3 <- parameters[2] > 0         # A > 0
-  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaUpperBound  # omega > 0
+  rest3 <- parameters[2] > 0  # A > 0
+  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaUpperBound
 
   if(rest1 & rest2 & rest3 & rest4){
     return(residualSS)
   }else{
     return(Inf)
   }
-
 }
 
 
