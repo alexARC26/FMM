@@ -16,7 +16,7 @@
 # Internal function: to estimate M, A and beta initial parameters
 # also returns residual sum of squared (RSS).
 # Arguments:
-#    alphaOmega: vector of the parameters alpha and omega
+#    alphaOmegaParameters: vector of the parameters alpha and omega
 #    vData: data to be fitted an FMM model.
 #    timePoints: one single period time points.
 # Returns a 6-length numerical vector: M, A, alpha, beta, omega and RSS
@@ -117,34 +117,34 @@ bestStep1 <- function(vData,step1){
 #   timePoints: one single period time points.
 #   omegaMax: max value for omega.
 ###############################################################
-step2FMM <- function(param, vData, timePoints, omegaMax){
+step2FMM <- function(parameters, vData, timePoints, omegaUpperBound){
 
   n <- length(timePoints)
 
   # FMM model
-  ffMob<-param[1] + param[2] * cos(param[4]+2*atan2(param[5]*sin((timePoints-param[3])/2),cos((timePoints-param[3])/2)))
+  modelFMM <- parameters[1] + parameters[2] *
+    cos(parameters[4] + 2*atan2(parameters[5] * sin((timePoints - parameters[3])/2),
+                                cos((timePoints - parameters[3])/2)))
 
   # Residual sum of squares
-  RSS<-sum((ffMob - vData)^2)/n
-  sigma <- sqrt(RSS*n/(n-5))
+  residualSS <- sum((modelFMM - vData)^2)/n
+  sigma <- sqrt(residualSS*n/(n-5))
 
   # When amplitude condition is valid, it returns RSS
   # else it returns infinite.
-  maxi<-param[1]+param[2]
-  mini<-param[1]-param[2]
-  rest1 <- maxi <= max(vData)+1.96*sigma
-  rest2 <- mini >= min(vData)-1.96*sigma
+  amplitudeUpperBound <- parameters[1]+parameters[2]
+  amplitudeLowerBound <- parameters[1]-parameters[2]
+  rest1 <- amplitudeUpperBound <= max(vData) + 1.96*sigma
+  rest2 <- amplitudeLowerBound >= min(vData) - 1.96*sigma
 
   # Other integrity conditions that must be met
-  rest3 <- param[2] > 0         # A > 0
-  rest4 <- param[5] > 0         # omega > 0
-  rest5 <- param[5] <= omegaMax # omega <= omegaMax
+  rest3 <- parameters[2] > 0         # A > 0
+  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaUpperBound  # omega > 0
 
-  if(rest1 & rest2 & rest3 & rest4 & rest5){
-    return(RSS)
+  if(rest1 & rest2 & rest3 & rest4){
+    return(residualSS)
   }else{
     return(Inf)
-    #return(10^10)
   }
 
 }

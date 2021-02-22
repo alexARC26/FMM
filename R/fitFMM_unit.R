@@ -31,7 +31,8 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
   bestPar <- bestStep1(vData,step1)
 
   ## Step 2: Nelder-Mead optimization. 'step2FMM' function is used.
-  nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData, timePoints = timePoints, omegaMax = omegaMax)
+  nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
+                      timePoints = timePoints, omegaUpperBound = omegaMax)
   parFinal <- nelderMead$par
   SSE <- nelderMead$value*n
 
@@ -72,7 +73,7 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
 
     ## Step 2: Nelder-Mead optimization
     nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-                        timePoints = timePoints, omegaMax = omegaMax)
+                        timePoints = timePoints, omegaUpperBound = omegaMax)
     parFinal <- nelderMead$par
 
     # alpha and beta between 0 and 2pi
