@@ -31,8 +31,17 @@ library("profvis")
 
 profvis(fitFMM(vData = data1$Voltage))
 
+fitFMM(data2$Voltage)
 
+m1 <- generate_FMM(-3, 15, 2.5, 0.3, 0.04, length.out = 500, sigmaNoise = 0.05)[[3]]
+m2 <- generate_FMM(-3, 15, 2.5, 0.3, 0.04, length.out = 1000, sigmaNoise = 0.05)[[3]]
+m3 <- generate_FMM(-3, 15, 2.5, 0.3, 0.04, length.out = 10000, sigmaNoise = 0.05)[[3]]
 
+#timesNonPar <- microbenchmark(m1 = fitFMM(m1), m2 = fitFMM(m2),
+#                              m3 = fitFMM(m3), times = 10)
 
+fitFMM(m2)
+fitFMM(data1$Voltage)
+plot(data1$Voltage)
 
 

@@ -39,7 +39,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                       alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMax = 1,
                       omegaGrid = exp(seq(log(0.0001),log(omegaMax),length.out=lengthOmegaGrid)),
-                      numReps = 3, parallelize=FALSE){
+                      numReps = 3, parallelize = FALSE){
 
   n <- length(vData)
   betaRestrictions <- sort(betaRestrictions)
