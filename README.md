@@ -13,5 +13,5 @@ Provides a collection of functions to fit and explore single, multi-component an
 install.packages("FMM")
 # Or the development version from GitHub:
 # install.packages("devtools")
-devtools::install_github("alexARC26/ggplot2")
+devtools::install_github("alexARC26/FMM")
 ```
