@@ -1,4 +1,4 @@
-###############################################################
+################################################################################
 # Internal function: fit monocomponent FMM model
 # Arguments:
 #   vData: data to be fitted an FMM model.
@@ -9,7 +9,7 @@
 #   omegaMax: max value for omega.
 #   numReps: number of times the alpha-omega grid search is repeated.
 # Returns an object of class FMM.
-###############################################################
+################################################################################
 fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                       alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
@@ -19,11 +19,13 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
                       numReps = 3, parallelize = FALSE, useRcpp = FALSE){
 
   n <- length(vData)
+  grid <- expand.grid(alphaGrid,omegaGrid)
 
   ## Step 1: initial values of M, A, alpha, beta and omega alpha and omega are
   # fixed and cosinor model is used to calculate the rest of the parameters.
   # step1FMM function is used to make this estimate
-  grid <- expand.grid(alphaGrid,omegaGrid)
+  # parallelization o rcpp function can be used
+
   if(parallelize){
     requireNamespace("doParallel", quietly = TRUE)
     nCores <- detectCores() - 1
@@ -74,10 +76,9 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
     omegaGrid <- seq(max(parFinal[5] - amplitudeOmegaGrid, 0),
                      min(omegaMax,parFinal[5] + amplitudeOmegaGrid),
                      length.out = nOmegaGrid)
-
-    ## Step 1: initial parameters
     grid <- as.matrix(expand.grid(alphaGrid,omegaGrid))
 
+    # Step 1: initial parameters
     if(parallelize){
       requireNamespace("doParallel", quietly = TRUE)
       nCores <- detectCores() - 1
@@ -107,7 +108,7 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
     ## Step 2: Nelder-Mead optimization
     nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
                         timePoints = timePoints, omegaMax = omegaMax,
-                        control=list(warn.1d.NelderMead = FALSE))
+                        control = list(warn.1d.NelderMead = FALSE))
     parFinal <- nelderMead$par
 
     # alpha and beta between 0 and 2pi
@@ -120,7 +121,9 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
   names(parFinal) <- c("M","A","alpha","beta","omega")
 
   # Returns an object of class FMM.
-  adjMob <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] + 2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
+  adjMob <- parFinal["M"] + parFinal["A"]*
+    cos(parFinal["beta"] +
+        2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
   SSE <- sum((adjMob-vData)^2)
 
   outMobius <- FMM(
@@ -135,7 +138,6 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
     SSE = SSE,
     R2 = PV(vData, adjMob)
   )
-
   return(outMobius)
 }
 

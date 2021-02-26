@@ -1,28 +1,39 @@
 # Fit FMM model
 #
 # Arguments:
-#    vData: A numeric vector which contains the data to be fitted an FMM model.
-#    nPeriods: A numeric value specifying the number of periods at which \code{vData} is observed.
-#    timePoints: A numeric vector containing the time points at which each data of one single period is observed.
-#                The default value is NULL, in which case they are equally spaced in range [0,2*pi].
-#                It must be between 0 to 2*pi.
-#    nback: Number of FMM components to be fitted. Its default value is 1.
-#    betaRestrictions: An integer vector of length nback indicating which FMM waves are constrained
-#                      to have equal beta parameters.
-#    omegaRestrictions: An integer vector of length \code{nback} indicating which FMM waves are constrained
-#                       to have equal omega parameters.
-#    maxiter: Maximum number of iterations for the backfitting algorithm. By default, it is setting at nback.
-#    stopFunctions: Function to check the criterion convergence for the backfitting algorithm.
-#    lengthAlphaGrid: Precission of the grid of alpha in the search of the best model. By default
-#                     it's established at 48 possible values of alpha, equally spaced between 0 and 2*pi.
-#    lengthOmegaGrid: Precission of the grid of omega in the search of the best model. By default
-#                     it's established at 24 possible values of omega, equally spaced between 0 and 1 in a
-#                     logarithmic way.
+#     vData: A numeric vector which contains the data to be fitted an FMM model.
+#     nPeriods: A numeric value specifying the number of periods at which
+#               \code{vData} is observed.
+#     timePoints: A numeric vector containing the time points at which each data
+#                 of one single period is observed.
+#                 The default value is NULL, in which case they are equally
+#                 spaced in range [0,2*pi].
+#                 It must be between 0 to 2*pi.
+#     nback: Number of FMM components to be fitted. Its default value is 1.
+#     betaRestrictions: An integer vector of length nback indicating which FMM
+#                       waves are constrained
+#                       to have equal beta parameters.
+#     omegaRestrictions: An integer vector of length \code{nback} indicating
+#                        which FMM waves are constrained
+#                        to have equal omega parameters.
+#     maxiter: Maximum number of iterations for the backfitting algorithm.
+#              By default, it is setting at nback.
+#     stopFunctions: Function to check the criterion convergence for the
+#                    backfitting algorithm.
+#     lengthAlphaGrid: Precission of the grid of alpha in the search of the best
+#                      model. By default it's established at 48 possible values
+#                      of alpha, equally spaced between 0 and 2*pi.
+#     lengthOmegaGrid: Precission of the grid of omega in the search of the best
+#                      model. By default it's established at 24 possible values
+#                      of omega, equally spaced between 0 and 1 in a logarithmic
+#                      way.
 #     numReps: Number of times the fitting is repeated.
 #     showProgress: TRUE to display a progress indicator on the console.
 #     showTime: TRUE to display execution time on the console.
-#     parallelize: TRUE to use parallelized procedure to fit restricted FMM model.
-#     useRcpp: TRUE to use Rcpp function (if parallelize == TRUE, useless argument)
+#     parallelize: TRUE to use parallelized procedure to fit restricted
+#                  FMM model.
+#     useRcpp: TRUE to use Rcpp function. If parallelize argument is true, then
+#              useRcpp is ignored
 fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                    nback = 1, betaRestrictions = 1:nback,
                    omegaRestrictions = 1:nback, maxiter = nback,
@@ -68,16 +79,26 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                        lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps,
                        useRcpp)
   } else {
-    if(length(unique(betaRestrictions)) == nback & length(unique(omegaRestrictions)) == nback){
-      res <- fitFMM_back(summarizedData, timePoints, nback, maxiter, stopFunction, objectFMM, staticComponents,
-                         lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps, showProgress)
+    if(length(unique(betaRestrictions)) == nback &
+       length(unique(omegaRestrictions)) == nback){
+      res <- fitFMM_back(summarizedData,timePoints, nback, maxiter,stopFunction,
+                         objectFMM, staticComponents, lengthAlphaGrid,
+                         lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid,
+                         numReps, showProgress)
     } else {
-      if(length(unique(omegaRestrictions)) == nback & length(unique(betaRestrictions)) != nback){
-        res <- fitFMM_restr_beta(summarizedData, timePoints, nback, betaRestrictions, maxiter, stopFunction, objectFMM,
-                            staticComponents, lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps, showProgress)
+      if(length(unique(omegaRestrictions)) == nback &
+         length(unique(betaRestrictions)) != nback){
+        res <- fitFMM_restr_beta(summarizedData, timePoints, nback,
+                                 betaRestrictions, maxiter, stopFunction,
+                                 objectFMM, staticComponents, lengthAlphaGrid,
+                                 lengthOmegaGrid, alphaGrid, omegaMax,omegaGrid,
+                                 numReps, showProgress)
       } else {
-        res <- fitFMM_restr_omega_beta(vData, timePoints, nback, betaRestrictions, omegaRestrictions, maxiter,
-                                       stopFunction, lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid,numReps, showProgress)
+        res <- fitFMM_restr_omega_beta(vData,timePoints, nback,betaRestrictions,
+                                       omegaRestrictions, maxiter, stopFunction,
+                                       lengthAlphaGrid, lengthOmegaGrid,
+                                       alphaGrid, omegaMax, omegaGrid,numReps,
+                                       showProgress)
       }
     }
   }
@@ -105,7 +126,6 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   }
 
   return(res)
-
 }
 
 
