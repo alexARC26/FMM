@@ -23,10 +23,12 @@
 #     showTime: TRUE to display execution time on the console.
 #     parallelize: TRUE to use parallelized procedure to fit restricted FMM model.
 fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
-                   nback = 1, betaRestrictions = 1:nback, omegaRestrictions = 1:nback, maxiter = nback,
+                   nback = 1, betaRestrictions = 1:nback,
+                   omegaRestrictions = 1:nback, maxiter = nback,
                    stopFunction = alwaysFalse,
                    lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                   numReps = 3, showProgress = TRUE, showTime = TRUE, parallelize=FALSE) {
+                   numReps = 3, showProgress = TRUE, showTime = TRUE,
+                   parallelize=FALSE, useRcpp = FALSE) {
 
   alphaGrid <- seq(0,2*pi,length.out = lengthAlphaGrid)
   omegaMax <- 1
@@ -61,8 +63,9 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   }
 
   if(nback == 1){
-    res <- fitFMM_unit(summarizedData, timePoints, lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax,
-                       omegaGrid,numReps)
+    res <- fitFMM_unit(summarizedData, timePoints, lengthAlphaGrid,
+                       lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps,
+                       useRcpp)
   } else {
     if(length(unique(betaRestrictions)) == nback & length(unique(omegaRestrictions)) == nback){
       res <- fitFMM_back(summarizedData, timePoints, nback, maxiter, stopFunction, objectFMM, staticComponents,

@@ -12,14 +12,16 @@
 ###############################################################
 fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                      alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMax = 1,
-                      omegaGrid = exp(seq(log(0.0001),log(omegaMax),length.out=lengthOmegaGrid)),
-                      numReps = 3, parallelize = FALSE){
+                      alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
+                      omegaMax = 1,
+                      omegaGrid = exp(seq(log(0.0001), log(omegaMax),
+                                          length.out = lengthOmegaGrid)),
+                      numReps = 3, parallelize = FALSE, useRcpp = FALSE){
 
   n <- length(vData)
 
-  ## Step 1: initial values of M, A, alpha, beta and omega
-  # alpha and omega are fixed and cosinor model is used to calculate the rest of the parameters.
+  ## Step 1: initial values of M, A, alpha, beta and omega alpha and omega are
+  # fixed and cosinor model is used to calculate the rest of the parameters.
   # step1FMM function is used to make this estimate
   grid <- expand.grid(alphaGrid,omegaGrid)
   if(parallelize){
@@ -27,10 +29,15 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
     nCores <- detectCores() - 1
     registerDoParallel(cores = nCores)
     parallelCluster <- makeCluster(nCores)
-    step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = step1FMM, vData=vData, timePoints=timePoints))
+    step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = step1FMM,
+                        vData = vData, timePoints = timePoints))
     stopCluster(parallelCluster)
+  }else if(useRcpp){
+    step1 <- t(apply(grid, 1, FUN = step1FMMrcpp, vData = vData,
+                     timePoints = timePoints))
   }else{
-    step1 <- t(apply(grid, 1, FUN = step1FMM, vData=vData, timePoints=timePoints))
+    step1 <- t(apply(grid, 1, FUN = step1FMM, vData = vData,
+                     timePoints = timePoints))
   }
   colnames(step1) <- c("M","A","alpha","beta","omega","RSS")
 
@@ -39,11 +46,9 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
   # We use bestStep1 internal function
   bestPar <- bestStep1(vData, step1)
 
-  print(bestPar[1:5])
-
   ## Step 2: Nelder-Mead optimization. 'step2FMM' function is used.
   nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-                      timePoints = timePoints, omegaUpperBound = omegaMax,
+                      timePoints = timePoints, omegaMax = omegaMax,
                       control=list(warn.1d.NelderMead = FALSE))
   parFinal <- nelderMead$par
   SSE <- nelderMead$value*n
@@ -59,33 +64,49 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
     # new grid for alpha between 0 and 2pi
     nAlphaGrid <- length(alphaGrid)
     amplitudeAlphaGrid <- 1.5*mean(diff(alphaGrid))
-    alphaGrid <- seq(parFinal[3]-amplitudeAlphaGrid,parFinal[3]+amplitudeAlphaGrid,length.out = nAlphaGrid)
+    alphaGrid <- seq(parFinal[3] - amplitudeAlphaGrid,
+                     parFinal[3] + amplitudeAlphaGrid, length.out = nAlphaGrid)
     alphaGrid <- alphaGrid%%(2*pi)
 
     # new grid for omega between 0 and omegaMax
     nOmegaGrid <- length(omegaGrid)
     amplitudeOmegaGrid <- 1.5*mean(diff(omegaGrid))
-    omegaGrid <- seq(max(parFinal[5]-amplitudeOmegaGrid,0),
-                     min(omegaMax,parFinal[5]+amplitudeOmegaGrid),
+    omegaGrid <- seq(max(parFinal[5] - amplitudeOmegaGrid, 0),
+                     min(omegaMax,parFinal[5] + amplitudeOmegaGrid),
                      length.out = nOmegaGrid)
 
     ## Step 1: initial parameters
     grid <- as.matrix(expand.grid(alphaGrid,omegaGrid))
-    step1 <- t(apply(grid,1,step1FMM, vData=vData, timePoints=timePoints))
+
+    if(parallelize){
+      requireNamespace("doParallel", quietly = TRUE)
+      nCores <- detectCores() - 1
+      registerDoParallel(cores = nCores)
+      parallelCluster <- makeCluster(nCores)
+      step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = step1FMM,
+                          vData = vData, timePoints = timePoints))
+      stopCluster(parallelCluster)
+    }else if(useRcpp){
+      step1 <- t(apply(grid, 1, FUN = step1FMMrcpp, vData = vData,
+                       timePoints = timePoints))
+    }else{
+      step1 <- t(apply(grid, 1, FUN = step1FMM, vData = vData,
+                       timePoints = timePoints))
+    }
     colnames(step1) <- c("M","A","alpha","beta","omega","RSS")
-    antBestPar <- bestPar
+    prevBestPar <- bestPar
     bestPar <- bestStep1(vData,step1)
 
     # None satisfies the conditions
     if(is.null(bestPar)){
-      bestPar <- antBestPar
+      bestPar <- prevBestPar
       numReps <- 0
       warning("FMM model may be no appropiate")
     }
 
     ## Step 2: Nelder-Mead optimization
     nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-                        timePoints = timePoints, omegaUpperBound = omegaMax,
+                        timePoints = timePoints, omegaMax = omegaMax,
                         control=list(warn.1d.NelderMead = FALSE))
     parFinal <- nelderMead$par
 

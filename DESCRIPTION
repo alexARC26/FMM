@@ -9,8 +9,17 @@ License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.5)
-Imports: methods, foreach, iterators, parallel, doParallel
+Imports: 
+    methods,
+    foreach,
+    iterators,
+    parallel,
+    doParallel,
+    Rcpp
 Suggests: ggplot2, RColorBrewer, testthat
 NeedsCompilation: no
 RoxygenNote: 7.1.1
 Packaged: 2021-01-11 22:31:59 UTC; Buhardilla
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo

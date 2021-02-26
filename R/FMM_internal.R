@@ -25,7 +25,7 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
 
   alphaParameter = alphaOmegaParameters[1]
   omegaParameter = alphaOmegaParameters[2]
-  mobiusTerm <- 2*atan(omegaParameter*tan((timePoints-alphaParameter)/2))
+  mobiusTerm <- 2*atan(omegaParameter*tan((timePoints - alphaParameter)/2))
   tStar <- alphaParameter + mobiusTerm
 
   ## VERSION CON EXPRESION EXACTA DE BETA0, BETA1, BETA2
@@ -41,7 +41,6 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
   phiEst<-atan2(-sinCoeff,cosCoeff)   # acrophase (phi)
   aParameter<-sqrt(cosCoeff^2+sinCoeff^2)      # wave amplitude
   betaParameter <- (phiEst+alphaParameter)%%(2*pi)
-
 
   mobiusModel<-mParameter+aParameter*cos(betaParameter+mobiusTerm) # Mobius regression
   residualSS<-sum((vData-mobiusModel)^2)/length(timePoints) # residual sum of squares
@@ -60,7 +59,7 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
 # Returns the optimal row of step1 argument.
 # optimum: minimum RSS with several stability conditions.
 ###############################################################
-bestStep1 <- function(vData,step1){
+bestStep1 <- function(vData, step1){
 
   # step1 in decreasing order by RSS
   orderedModelParameters <- order(step1[,"RSS"])
@@ -98,8 +97,8 @@ bestStep1 <- function(vData,step1){
     if(i > nrow(step1))
       return(NULL)
   }
-  return(step1[orderedModelParameters[i],])
 
+  return(step1[orderedModelParameters[i],])
 }
 
 ###############################################################
@@ -110,7 +109,7 @@ bestStep1 <- function(vData,step1){
 #   timePoints: one single period time points.
 #   omegaMax: max value for omega.
 ###############################################################
-step2FMM <- function(parameters, vData, timePoints, omegaUpperBound){
+step2FMM <- function(parameters, vData, timePoints, omegaMax){
 
   n <- length(timePoints)
 
@@ -119,24 +118,23 @@ step2FMM <- function(parameters, vData, timePoints, omegaUpperBound){
     cos(parameters[4] + 2*atan2(parameters[5] * sin((timePoints - parameters[3])/2),
                                 cos((timePoints - parameters[3])/2)))
   residualSS <- sum((modelFMM - vData)^2)/n
-  sigma <- sqrt(residualSS*n/(n-5))
+  sigma <- sqrt(residualSS*n/(n - 5))
 
   # When amplitude condition is valid, it returns RSS
   # else it returns infinite.
-  amplitudeUpperBound <- parameters[1]+parameters[2]
-  amplitudeLowerBound <- parameters[1]-parameters[2]
+  amplitudeUpperBound <- parameters[1] + parameters[2]
+  amplitudeLowerBound <- parameters[1] - parameters[2]
   rest1 <- amplitudeUpperBound <= max(vData) + 1.96*sigma
   rest2 <- amplitudeLowerBound >= min(vData) - 1.96*sigma
 
   # Other integrity conditions that must be met
   rest3 <- parameters[2] > 0  # A > 0
-  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaUpperBound
+  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax
 
-  if(rest1 & rest2 & rest3 & rest4){
+  if(rest1 & rest2 & rest3 & rest4)
     return(residualSS)
-  }else{
+  else
     return(Inf)
-  }
 }
 
 
