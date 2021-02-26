@@ -22,13 +22,14 @@
 #     showProgress: TRUE to display a progress indicator on the console.
 #     showTime: TRUE to display execution time on the console.
 #     parallelize: TRUE to use parallelized procedure to fit restricted FMM model.
+#     useRcpp: TRUE to use Rcpp function (if parallelize == TRUE, useless argument)
 fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                    nback = 1, betaRestrictions = 1:nback,
                    omegaRestrictions = 1:nback, maxiter = nback,
                    stopFunction = alwaysFalse,
                    lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                    numReps = 3, showProgress = TRUE, showTime = TRUE,
-                   parallelize=FALSE, useRcpp = FALSE) {
+                   parallelize = FALSE, useRcpp = length(vData)>1500){
 
   alphaGrid <- seq(0,2*pi,length.out = lengthAlphaGrid)
   omegaMax <- 1
