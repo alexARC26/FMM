@@ -44,7 +44,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
 
   alphaGrid <- seq(0,2*pi,length.out = lengthAlphaGrid)
   omegaMax <- 1
-  omegaGrid <- exp(seq(log(0.0001),log(omegaMax),length.out=lengthOmegaGrid))
+  omegaGrid <- exp(seq(log(0.0001),log(omegaMax),length.out = lengthOmegaGrid))
   staticComponents <- NULL
   objectFMM <- NULL
 
@@ -55,8 +55,8 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
 
   if(nPeriods > 1){
     n <- length(vData)
-    if(n%%nPeriods != 0) stop("Data length is not a multiple of nPeriods")
-    M <- matrix(vData,nrow=nPeriods,ncol=n/nPeriods,byrow = TRUE)
+    if(n %% nPeriods != 0) stop("Data length is not a multiple of nPeriods")
+    M <- matrix(vData, nrow = nPeriods, ncol = n/nPeriods, byrow = TRUE)
     #vDataAnt <- vData
     summarizedData <- apply(M,2,mean)
   } else {
