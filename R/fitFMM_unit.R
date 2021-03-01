@@ -112,8 +112,8 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
     parFinal <- nelderMead$par
 
     # alpha and beta between 0 and 2pi
-    parFinal[3] <- parFinal[3]%%(2*pi)
-    parFinal[4] <- parFinal[4]%%(2*pi)
+    parFinal[3] <- parFinal[3] %% (2*pi)
+    parFinal[4] <- parFinal[4] %% (2*pi)
 
     numReps <- numReps - 1
   }
