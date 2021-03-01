@@ -16,32 +16,27 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
                       omegaMax = 1,
                       omegaGrid = exp(seq(log(0.0001), log(omegaMax),
                                           length.out = lengthOmegaGrid)),
-                      numReps = 3, parallelize = FALSE, useRcpp = FALSE){
+                      numReps = 3, parallelCluster = NULL, useRcpp = FALSE){
 
   n <- length(vData)
   grid <- expand.grid(alphaGrid,omegaGrid)
+  step1OutputNames <- c("M","A","alpha","beta","omega","RSS")
 
-  ## Step 1: initial values of M, A, alpha, beta and omega alpha and omega are
-  # fixed and cosinor model is used to calculate the rest of the parameters.
-  # step1FMM function is used to make this estimate
-  # parallelization o rcpp function can be used
+  ## Step 1: initial values of M, A, alpha, beta and omega. Parameters alpha and
+  # omega are initially fixed and cosinor model is used to calculate the rest of the parameters.
+  # step1FMM function is used to make this estimate.
+  # For faster estimates, parallelized and rcpp implementations are available
 
-  if(parallelize){
-    requireNamespace("doParallel", quietly = TRUE)
-    nCores <- detectCores() - 1
-    registerDoParallel(cores = nCores)
-    parallelCluster <- makeCluster(nCores)
+  if(!is.null(parallelCluster)){
     step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = step1FMM,
                         vData = vData, timePoints = timePoints))
-    stopCluster(parallelCluster)
-  }else if(useRcpp){
-    step1 <- t(apply(grid, 1, FUN = step1FMMrcpp, vData = vData,
-                     timePoints = timePoints))
   }else{
-    step1 <- t(apply(grid, 1, FUN = step1FMM, vData = vData,
+    usedFunction <- ifelse(useRcpp,step1FMMrcpp, step1FMM)
+
+    step1 <- t(apply(grid, 1, FUN = usedFunction, vData = vData,
                      timePoints = timePoints))
   }
-  colnames(step1) <- c("M","A","alpha","beta","omega","RSS")
+  colnames(step1) <- step1OutputNames
 
   # We find the optimal initial parameters,
   # minimizing Residual Sum of Squared with several stability conditions.
@@ -50,8 +45,7 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
 
   ## Step 2: Nelder-Mead optimization. 'step2FMM' function is used.
   nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-                      timePoints = timePoints, omegaMax = omegaMax,
-                      control=list(warn.1d.NelderMead = FALSE))
+                      timePoints = timePoints, omegaMax = omegaMax)
   parFinal <- nelderMead$par
   SSE <- nelderMead$value*n
 
@@ -79,22 +73,14 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
     grid <- as.matrix(expand.grid(alphaGrid,omegaGrid))
 
     # Step 1: initial parameters
-    if(parallelize){
-      requireNamespace("doParallel", quietly = TRUE)
-      nCores <- detectCores() - 1
-      registerDoParallel(cores = nCores)
-      parallelCluster <- makeCluster(nCores)
+    if(!is.null(parallelCluster)){
       step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = step1FMM,
                           vData = vData, timePoints = timePoints))
-      stopCluster(parallelCluster)
-    }else if(useRcpp){
-      step1 <- t(apply(grid, 1, FUN = step1FMMrcpp, vData = vData,
-                       timePoints = timePoints))
     }else{
-      step1 <- t(apply(grid, 1, FUN = step1FMM, vData = vData,
+      step1 <- t(apply(grid, 1, FUN = usedFunction, vData = vData,
                        timePoints = timePoints))
     }
-    colnames(step1) <- c("M","A","alpha","beta","omega","RSS")
+    colnames(step1) <- step1OutputNames
     prevBestPar <- bestPar
     bestPar <- bestStep1(vData,step1)
 
@@ -107,8 +93,7 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
 
     ## Step 2: Nelder-Mead optimization
     nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-                        timePoints = timePoints, omegaMax = omegaMax,
-                        control = list(warn.1d.NelderMead = FALSE))
+                        timePoints = timePoints, omegaMax = omegaMax)
     parFinal <- nelderMead$par
 
     # alpha and beta between 0 and 2pi
@@ -118,13 +103,15 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
     numReps <- numReps - 1
   }
 
-  names(parFinal) <- c("M","A","alpha","beta","omega")
+  names(parFinal) <- step1OutputNames[-6]
 
   # Returns an object of class FMM.
   adjMob <- parFinal["M"] + parFinal["A"]*
     cos(parFinal["beta"] +
         2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
   SSE <- sum((adjMob-vData)^2)
+
+
 
   outMobius <- FMM(
     M = parFinal["M"],

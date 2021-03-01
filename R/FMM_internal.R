@@ -31,18 +31,16 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
   mobiusTerm <- 2*atan(omegaParameter*tan((timePoints - alphaParameter)/2))
   tStar <- alphaParameter + mobiusTerm
 
-  # alpha and omega given (parameters)
-  # we must compute cosinor model with t* in order to obtain delta (cosCoeff)
-  # and gamma (sinCoeff)
-  # exact expressions for linear model regressors are used. Two variables:
-  # cos(t*) and sin(t*).
+  # Given alpha and omega, a cosinor model is computed with t* in
+  # order to obtain delta (cosCoeff) and gamma (sinCoeff).
+  # Linear Model exact expressions are used to improve performance.
   costStar <- cos(tStar)
   sentstar <- sin(tStar)
-  covMatrix <- cov(cbind(vData, costStar, sentstar))
+  covMatrix <- stats::cov(cbind(vData, costStar, sentstar))
   denominator <- covMatrix[2,2]*covMatrix[3,3] - covMatrix[2,3]^2
-  cosCoeff <- (covMatrix[1, 2]*covMatrix[3,3] -
+  cosCoeff <- (covMatrix[1,2]*covMatrix[3,3] -
                  covMatrix[1,3]*covMatrix[2,3])/denominator
-  sinCoeff <- (covMatrix[1, 3]*covMatrix[2,2] -
+  sinCoeff <- (covMatrix[1,3]*covMatrix[2,2] -
                  covMatrix[1,2]*covMatrix[2,3])/denominator
   mParameter <- mean(vData) - cosCoeff*mean(costStar) - sinCoeff*mean(sentstar)
 
@@ -112,7 +110,7 @@ bestStep1 <- function(vData, step1){
 ################################################################################
 # Internal function: second step of FMM fitting process
 # Arguments:
-#   param: M, A, alpha, beta, omega initial parameter estimations
+#   parameters: M, A, alpha, beta, omega initial parameter estimations
 #   vData: data to be fitted an FMM model.
 #   timePoints: one single period time points.
 #   omegaMax: max value for omega.
@@ -137,12 +135,12 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
 
   # Other integrity conditions that must be met
   rest3 <- parameters[2] > 0  # A > 0
-  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax
+  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax # omega > 0 and omega <= omegaMax
 
   if(rest1 & rest2 & rest3 & rest4)
     return(residualSS)
   else
-    return(Inf)
+    return(10^10)
 }
 
 ################################################################################
@@ -168,9 +166,9 @@ refineFMM <- function(vData, nPeriods = 1, timePoints = NULL, nback = 1,
   if(nPeriods > 1){
     n <- length(vData)
     if(n%%nPeriods != 0) stop("Data length is not a multiple of nPeriods")
-    M <- matrix(vData,nrow=nPeriods,ncol=n/nPeriods,byrow = TRUE)
+    dataMatrix <- matrix(vData,nrow=nPeriods,ncol=n/nPeriods,byrow = TRUE)
     #vDataAnt <- vData
-    summarizedData <- apply(M,2,mean)
+    summarizedData <- apply(dataMatrix,2,mean)
   } else {
     summarizedData <- vData
   }
@@ -184,19 +182,19 @@ refineFMM <- function(vData, nPeriods = 1, timePoints = NULL, nback = 1,
   }
 
   if(nback == 1){
-    res <- fitFMM_unit(summarizedData, timePoints, lengthAlphaGrid,
+    fittedFMM <- fitFMM_unit(summarizedData, timePoints, lengthAlphaGrid,
                        lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps)
   } else {
     if(length(unique(betaRestrictions)) == nback &
        length(unique(omegaRestrictions)) == nback){
-      res <- fitFMM_back(summarizedData, timePoints, nback, maxiter,
+      fittedFMM <- fitFMM_back(summarizedData, timePoints, nback, maxiter,
                          stopFunction, objectFMM, staticComponents,
                          lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax,
                          omegaGrid, numReps, showProgress)
     } else {
       if(length(unique(omegaRestrictions)) == nback &
          length(unique(betaRestrictions)) != nback){
-        res <- fitFMM_restr_beta(summarizedData, timePoints, nback,
+        fittedFMM <- fitFMM_restr_beta(summarizedData, timePoints, nback,
                                  betaRestrictions, maxiter, stopFunction,
                                  objectFMM, staticComponents, lengthAlphaGrid,
                                  lengthOmegaGrid, alphaGrid, omegaMax,omegaGrid,
@@ -204,7 +202,7 @@ refineFMM <- function(vData, nPeriods = 1, timePoints = NULL, nback = 1,
       } else {
         if(showProgress)
           warning("showProgress not available when specifying omegaRestrictions.")
-        res <- fitFMM_restr(summarizedData, timePoints, nback, betaRestrictions,
+        fittedFMM <- fitFMM_restr(summarizedData, timePoints, nback, betaRestrictions,
                             omegaRestrictions, maxiter, stopFunction, objectFMM,
                             staticComponents, lengthAlphaGrid, lengthOmegaGrid,
                             alphaGrid, omegaMax, omegaGrid, numReps,parallelize)
@@ -217,18 +215,18 @@ refineFMM <- function(vData, nPeriods = 1, timePoints = NULL, nback = 1,
     cat(time.end-time.ini)
   }
 
-  res@nPeriods <- nPeriods
-  res@data <- vData
+  fittedFMM@nPeriods <- nPeriods
+  fittedFMM@data <- vData
 
-  ordenVariabilidad <- order(res@R2,decreasing = TRUE)
+  explainedVarOrder <- order(fittedFMM@R2,decreasing = TRUE)
 
-  res@A <- res@A[ordenVariabilidad]
-  res@alpha <- res@alpha[ordenVariabilidad]
-  res@beta <- res@beta[ordenVariabilidad]
-  res@omega <- res@omega[ordenVariabilidad]
-  res@R2 <- res@R2[ordenVariabilidad]
+  fittedFMM@A <- fittedFMM@A[explainedVarOrder]
+  fittedFMM@alpha <- fittedFMM@alpha[explainedVarOrder]
+  fittedFMM@beta <- fittedFMM@beta[explainedVarOrder]
+  fittedFMM@omega <- fittedFMM@omega[explainedVarOrder]
+  fittedFMM@R2 <- fittedFMM@R2[explainedVarOrder]
 
-  return(res)
+  return(fittedFMM)
 }
 
 ################################################################################

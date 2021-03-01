@@ -32,7 +32,8 @@
 #     showTime: TRUE to display execution time on the console.
 #     parallelize: TRUE to use parallelized procedure to fit restricted
 #                  FMM model.
-#     useRcpp: TRUE to use Rcpp function. If parallelize argument is true, then
+#     useRcpp: TRUE to use Rcpp function. For data with more than 1500 points, Rcpp
+#              is used by default. If parallelize argument is true, then
 #              useRcpp is ignored
 fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                    nback = 1, betaRestrictions = 1:nback,
@@ -53,16 +54,18 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
 
   if(showTime) time.ini <- Sys.time()
 
+  # If data has more than one period, it must be summarized
   if(nPeriods > 1){
     n <- length(vData)
     if(n %% nPeriods != 0) stop("Data length is not a multiple of nPeriods")
-    M <- matrix(vData, nrow = nPeriods, ncol = n/nPeriods, byrow = TRUE)
+    dataMatrix <- matrix(vData, nrow = nPeriods, ncol = n/nPeriods, byrow = TRUE)
     #vDataAnt <- vData
-    summarizedData <- apply(M,2,mean)
+    summarizedData <- apply(dataMatrix,2,mean)
   } else {
     summarizedData <- vData
   }
 
+  # Generation of the time points
   if(is.null(timePoints)){
     timePoints<-seqTimes(length(summarizedData))
   } else {
@@ -74,27 +77,47 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     }
   }
 
+  # If parallelization is allowed, the parallelCluster is registered
+  if(parallelize){
+    requireNamespace("doParallel", quietly = TRUE)
+    nCores <- parallel::detectCores() - 1
+    doParallel::registerDoParallel(cores = nCores)
+    parallelCluster <- parallel::makeCluster(nCores)
+  }else{
+    parallelCluster<-NULL
+  }
+
+
+
   if(nback == 1){
-    res <- fitFMM_unit(summarizedData, timePoints, lengthAlphaGrid,
-                       lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps,
-                       useRcpp)
+    fittedFMM <- fitFMM_unit(vData = summarizedData, timePoints = timePoints,
+                       lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
+                       alphaGrid = alphaGrid, omegaMax = omegaMax, omegaGrid = omegaGrid,
+                       numReps = numReps, parallelCluster = parallelCluster, useRcpp = useRcpp)
+
+    # After the calculus the cores are given back
+    # TODO: this line should be common for all three models.
+    if(parallelize){
+      parallel::stopCluster(parallelCluster)
+    }
+
   } else {
     if(length(unique(betaRestrictions)) == nback &
        length(unique(omegaRestrictions)) == nback){
-      res <- fitFMM_back(summarizedData,timePoints, nback, maxiter,stopFunction,
+      fittedFMM <- fitFMM_back(summarizedData,timePoints, nback, maxiter,stopFunction,
                          objectFMM, staticComponents, lengthAlphaGrid,
                          lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid,
                          numReps, showProgress)
     } else {
       if(length(unique(omegaRestrictions)) == nback &
          length(unique(betaRestrictions)) != nback){
-        res <- fitFMM_restr_beta(summarizedData, timePoints, nback,
+        fittedFMM <- fitFMM_restr_beta(summarizedData, timePoints, nback,
                                  betaRestrictions, maxiter, stopFunction,
                                  objectFMM, staticComponents, lengthAlphaGrid,
                                  lengthOmegaGrid, alphaGrid, omegaMax,omegaGrid,
                                  numReps, showProgress)
       } else {
-        res <- fitFMM_restr_omega_beta(vData,timePoints, nback,betaRestrictions,
+        fittedFMM <- fitFMM_restr_omega_beta(vData,timePoints, nback,betaRestrictions,
                                        omegaRestrictions, maxiter, stopFunction,
                                        lengthAlphaGrid, lengthOmegaGrid,
                                        alphaGrid, omegaMax, omegaGrid,numReps,
@@ -108,24 +131,24 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     cat(time.end-time.ini)
   }
 
-  res@nPeriods <- nPeriods
-  res@data <- vData
+  fittedFMM@nPeriods <- nPeriods
+  fittedFMM@data <- vData
 
-  ordenVariabilidad <- order(res@R2,decreasing = TRUE)
+  explainedVarOrder <- order(fittedFMM@R2,decreasing = TRUE)
 
-  res@A <- res@A[ordenVariabilidad]
-  res@alpha <- res@alpha[ordenVariabilidad]
-  res@beta <- res@beta[ordenVariabilidad]
-  res@omega <- res@omega[ordenVariabilidad]
-  res@R2 <- res@R2[ordenVariabilidad]
+  fittedFMM@A <- fittedFMM@A[explainedVarOrder]
+  fittedFMM@alpha <- fittedFMM@alpha[explainedVarOrder]
+  fittedFMM@beta <- fittedFMM@beta[explainedVarOrder]
+  fittedFMM@omega <- fittedFMM@omega[explainedVarOrder]
+  fittedFMM@R2 <- fittedFMM@R2[explainedVarOrder]
 
-  # some A<0 in the restricted solution
-  needFix <- which(res@A < 0)
+  # Restricted algorithm may find models with A<0
+  needFix <- which(fittedFMM@A < 0)
   if(length(needFix)>0) {
     stop("Invalid solution: check function input parameters.")
   }
 
-  return(res)
+  return(fittedFMM)
 }
 
 
