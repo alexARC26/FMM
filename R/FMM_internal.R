@@ -51,7 +51,7 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
   betaParameter <- (phiEst+alphaParameter)%%(2*pi)
 
   mobiusRegression <- mParameter + aParameter*cos(betaParameter + mobiusTerm)
-  residualSS <- sum((vData - mobiusRegressionl)^2)/length(timePoints)
+  residualSS <- sum((vData - mobiusRegression)^2)/length(timePoints)
 
   return(c(mParameter, aParameter, alphaParameter, betaParameter,
            omegaParameter, residualSS))

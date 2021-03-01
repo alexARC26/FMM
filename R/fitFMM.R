@@ -40,7 +40,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                    stopFunction = alwaysFalse,
                    lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                    numReps = 3, showProgress = TRUE, showTime = TRUE,
-                   parallelize = FALSE, useRcpp = length(vData)>1500){
+                   parallelize = FALSE, useRcpp = length(vData) > 1500){
 
   alphaGrid <- seq(0,2*pi,length.out = lengthAlphaGrid)
   omegaMax <- 1
