@@ -1,7 +1,7 @@
 exportPattern("^[[:alpha:]]+")
 importFrom("graphics", "axis", "legend", "points")
 importFrom("methods", "new")
-importFrom("stats", "coefficients", "lm", "optim", "rnorm","predict")
+importFrom("stats", "coefficients", "lm", "optim", "rnorm", "predict", "cov")
 importFrom("foreach", "foreach", "%dopar%")
 importFrom("iterators", "iter")
 importFrom("parallel","detectCores","makeCluster","stopCluster", "parApply")
