@@ -82,18 +82,18 @@ bestStep1 <- function(vData, step1){
   i <- 1
   while(!bestModelFound){
     # parameters
-    mParameter <- step1[orderedModelParameters[i],"M"]
-    aParameter <- step1[orderedModelParameters[i],"A"]
-    alphaParameter <- step1[orderedModelParameters[i],"alpha"]
-    betaParameter <- step1[orderedModelParameters[i],"beta"]
-    omegaParameter <- step1[orderedModelParameters[i],"omega"]
-    sigma <- sqrt(step1[orderedModelParameters[i],"RSS"]*n/(n-5))
+    mParameter <- step1[orderedModelParameters[i], "M"]
+    aParameter <- step1[orderedModelParameters[i], "A"]
+    alphaParameter <- step1[orderedModelParameters[i], "alpha"]
+    betaParameter <- step1[orderedModelParameters[i], "beta"]
+    omegaParameter <- step1[orderedModelParameters[i], "omega"]
+    sigma <- sqrt(step1[orderedModelParameters[i], "RSS"]*n/(n-5))
 
     # stability conditions
     amplitudeUpperBound <- mParameter + aParameter
     amplitudeLowerBound <- mParameter - aParameter
-    rest1 <- amplitudeUpperBound <= maxVData+1.96*sigma
-    rest2 <- amplitudeLowerBound >= minVData-1.96*sigma
+    rest1 <- amplitudeUpperBound <= maxVData + 1.96*sigma
+    rest2 <- amplitudeLowerBound >= minVData - 1.96*sigma
 
     # it is necessary to check that there are no NA,
     # because it can be an extreme solution
