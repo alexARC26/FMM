@@ -18,13 +18,14 @@ arma::mat myFastLm(const arma::mat& X, const arma::colvec& y) {
 //' @param timePoints: one single period time points.
 //' @export
 // [[Rcpp::export]]
-Rcpp::NumericVector step1FMMrcpp(const arma::colvec& alphaOmegaParameters, const arma::colvec& vData,
+Rcpp::NumericVector step1FMMrcpp(const arma::colvec& alphaOmegaParameters,
+                                 const arma::colvec& vData,
                                  const arma::colvec& timePoints){
 
   double alphaParameter = alphaOmegaParameters[0];
   double omegaParameter = alphaOmegaParameters[1];
 
-  arma::colvec mobiusTerm = 2*atan(omegaParameter*tan((timePoints-alphaParameter)/2));
+  arma::colvec mobiusTerm = 2*atan(omegaParameter*tan((timePoints - alphaParameter)/2));
   arma::colvec tStar = alphaParameter + mobiusTerm;
 
   arma::colvec costStar = cos(tStar);
