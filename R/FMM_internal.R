@@ -136,7 +136,6 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
   # Other integrity conditions that must be met
   rest3 <- parameters[2] > 0  # A > 0
   rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax # omega > 0 and omega <= omegaMax
-
   if(rest1 & rest2 & rest3 & rest4)
     return(residualSS)
   else
@@ -301,3 +300,10 @@ angularmean <- function(angles){
   a.mean <- atan2(sum(sin(angles)),sum(cos(angles)))
   return(a.mean)
 }
+
+################################################################################
+# Internal function: preparing core cluster for parallelization
+# Returns a core cluster to operate with.
+################################################################################
+
+

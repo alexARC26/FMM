@@ -82,7 +82,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     requireNamespace("doParallel", quietly = TRUE)
     nCores <- parallel::detectCores() - 1
     doParallel::registerDoParallel(cores = nCores)
-    parallelCluster <- parallel::makeCluster(nCores, outfile = "")
+    parallelCluster <- parallel::makePSOCKcluster(nCores, outfile = "")
   }else{
     parallelCluster <- NULL
   }

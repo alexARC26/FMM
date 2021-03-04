@@ -1,7 +1,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
+#define ARMA_DONT_PRINT_ERRORS
 #include <RcppArmadillo.h>
 
-#define ARMA_DONT_PRINT_ERRORS
 #define twoPi 6.28318573072
 using namespace Rcpp;
 using namespace arma;
@@ -40,8 +40,6 @@ Rcpp::NumericVector step1FMMrcpp(const arma::colvec& alphaOmegaParameters,
   double phiEst = atan2(-sinCoeff, cosCoeff); // acrophase (phi)
   double aParameter = sqrt(pow(cosCoeff,2) + pow(sinCoeff,2));
   double betaParameter = fmod(phiEst + alphaParameter, twoPi);
-  if (betaParameter < 0.0)
-    betaParameter += twoPi;
 
   arma::colvec  mobiusModel = mParameter + aParameter*cos(betaParameter + mobiusTerm); // Mobius regression
   double residualSS = accu(pow(vData - mobiusModel,2))/vData.size(); //residual sum of squares
