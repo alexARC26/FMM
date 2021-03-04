@@ -16,12 +16,16 @@
 #   showProgress: TRUE to display a progress indicator on the console.
 # Returns an object of class FMM.
 ###############################################################
-fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback, maxiter=nback,
-                      stopFunction = alwaysFalse, objectFMM = NULL, staticComponents = NULL,
+fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
+                      maxiter = nback, stopFunction = alwaysFalse,
+                      objectFMM = NULL, staticComponents = NULL,
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                      alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMax = 1,
-                      omegaGrid = exp(seq(log(0.0001),log(omegaMax),length.out=lengthOmegaGrid)),
-                      numReps = 3, showProgress = TRUE){
+                      alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
+                      omegaMax = 1,
+                      omegaGrid = exp(seq(log(0.0001),log(omegaMax),
+                                          length.out=lengthOmegaGrid)),
+                      numReps = 3, showProgress = TRUE, parallelCluster = NULL,
+                      useRcpp = FALSE){
 
   n <- length(vData)
 
@@ -102,7 +106,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback, maxite
         # component j fitting using fitFMM_unit function
         ajusteComponente[[j]] <- fitFMM_unit(vDataAjuste,timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
                                             lengthOmegaGrid = lengthOmegaGrid, alphaGrid = alphaGrid[[j]], omegaMax = omegaMax,
-                                            omegaGrid = omegaGrid[[j]], numReps = numReps)
+                                            omegaGrid = omegaGrid[[j]], numReps = numReps, parallelCluster, useRcpp)
         predichosComponente[[j]] <- getFittedValues(ajusteComponente[[j]])
 
       }

@@ -10,7 +10,7 @@
 #   numReps: number of times the alpha-omega grid search is repeated.
 # Returns an object of class FMM.
 ################################################################################
-fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
+fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                       alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
                       omegaMax = 1,
@@ -26,13 +26,12 @@ fitFMM_unit<-function(vData, timePoints = seqTimes(length(vData)),
   # omega are initially fixed and cosinor model is used to calculate the rest of the parameters.
   # step1FMM function is used to make this estimate.
   # For faster estimates, parallelized and rcpp implementations are available
+  usedFunction <- ifelse(useRcpp, step1FMMrcpp, step1FMM)
 
   if(!is.null(parallelCluster)){
-    step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = step1FMM,
+    step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = usedFunction,
                         vData = vData, timePoints = timePoints))
   }else{
-    usedFunction <- ifelse(useRcpp,step1FMMrcpp, step1FMM)
-
     step1 <- t(apply(grid, 1, FUN = usedFunction, vData = vData,
                      timePoints = timePoints))
   }

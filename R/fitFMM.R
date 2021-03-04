@@ -41,7 +41,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                    stopFunction = alwaysFalse,
                    lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                    numReps = 3, showProgress = TRUE, showTime = TRUE,
-                   parallelize = FALSE, useRcpp = length(vData) > 1500){
+                   parallelize = FALSE, useRcpp = FALSE){
 
   alphaGrid <- seq(0,2*pi,length.out = lengthAlphaGrid)
   omegaMax <- 1
@@ -82,9 +82,9 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     requireNamespace("doParallel", quietly = TRUE)
     nCores <- parallel::detectCores() - 1
     doParallel::registerDoParallel(cores = nCores)
-    parallelCluster <- parallel::makeCluster(nCores)
+    parallelCluster <- parallel::makeCluster(nCores, outfile = "")
   }else{
-    parallelCluster<-NULL
+    parallelCluster <- NULL
   }
 
 
@@ -95,19 +95,13 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                        alphaGrid = alphaGrid, omegaMax = omegaMax, omegaGrid = omegaGrid,
                        numReps = numReps, parallelCluster = parallelCluster, useRcpp = useRcpp)
 
-    # After the calculus the cores are given back
-    # TODO: this line should be common for all three models.
-    if(parallelize){
-      parallel::stopCluster(parallelCluster)
-    }
-
   } else {
     if(length(unique(betaRestrictions)) == nback &
        length(unique(omegaRestrictions)) == nback){
       fittedFMM <- fitFMM_back(summarizedData,timePoints, nback, maxiter,stopFunction,
                          objectFMM, staticComponents, lengthAlphaGrid,
                          lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid,
-                         numReps, showProgress)
+                         numReps, showProgress, parallelCluster, useRcpp )
     } else {
       if(length(unique(omegaRestrictions)) == nback &
          length(unique(betaRestrictions)) != nback){
@@ -124,6 +118,11 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                                        showProgress)
       }
     }
+  }
+
+  # After the calculus the cores are given back
+  if(parallelize){
+    parallel::stopCluster(parallelCluster)
   }
 
   if(showTime & showProgress){
@@ -147,8 +146,9 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   if(length(needFix)>0) {
     stop("Invalid solution: check function input parameters.")
   }
-
   return(fittedFMM)
 }
+
+
 
 
