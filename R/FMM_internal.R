@@ -301,9 +301,5 @@ angularmean <- function(angles){
   return(a.mean)
 }
 
-################################################################################
-# Internal function: preparing core cluster for parallelization
-# Returns a core cluster to operate with.
-################################################################################
 
 
