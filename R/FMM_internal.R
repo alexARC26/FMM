@@ -1,4 +1,4 @@
-###############################################################
+################################################################################
 # Auxiliary internal functions
 # Functions:
 #   step1FMM:     M, A and beta initial parameter estimations.
@@ -6,52 +6,57 @@
 #   step2FMM:     second step of FMM fitting process.
 #   refineFMM:    fitFMM from a previous objectFMM.
 #   PV:           percentage of variability explained.
-#   PVj:          percentage of variability explained by each component of FMM model.
+#   PVj:          percentage of variability explained by each component of
+#                 FMM model.
 #   angularmean:  to compute the angular mean.
-#   seqTimes:     to build a sequence of equally time points spaced in range [0,2*pi].
-###############################################################
+#   seqTimes:     to build a sequence of equally time points spaced in range
+#                 [0,2*pi].
+################################################################################
 
 
-###############################################################
+################################################################################
 # Internal function: to estimate M, A and beta initial parameters
 # also returns residual sum of squared (RSS).
 # Arguments:
-#    alphaOmega: vector of the parameters alpha and omega
+#    alphaOmegaParameters: vector of the parameters alpha and omega
 #    vData: data to be fitted an FMM model.
 #    timePoints: one single period time points.
 # Returns a 6-length numerical vector: M, A, alpha, beta, omega and RSS
-###############################################################
-step1FMM <- function(alphaOmega, vData, timePoints) {
+################################################################################
+step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
 
-  alpha <- alphaOmega[1]
-  omega <- alphaOmega[2]
+  alphaParameter <- alphaOmegaParameters[1]
+  omegaParameter <- alphaOmegaParameters[2]
 
-  parteMobius <- 2*atan(omega*tan((timePoints-alpha)/2))
-  t_star <- alpha + parteMobius
+  mobiusTerm <- 2*atan(omegaParameter*tan((timePoints - alphaParameter)/2))
+  tStar <- alphaParameter + mobiusTerm
 
-  # cosinor model with fixed alpha and omega
-  xx<-cos(t_star)
-  zz<-sin(t_star)
-  fit<-lm((vData)~xx+zz)
-  M <-fit$coefficients[1] # intercept
-  bb<-fit$coefficients[2] # cos coefficient
-  gg<-fit$coefficients[3] # sin coefficient
-  phiEst<-atan2(-gg,bb)   # acrophase (phi)
-  A<-sqrt(bb^2+gg^2)      # wave amplitude
-  beta <- (phiEst+alpha)%%(2*pi)
+  # Given alpha and omega, a cosinor model is computed with t* in
+  # order to obtain delta (cosCoeff) and gamma (sinCoeff).
+  # Linear Model exact expressions are used to improve performance.
+  costStar <- cos(tStar)
+  sentstar <- sin(tStar)
+  covMatrix <- stats::cov(cbind(vData, costStar, sentstar))
+  denominator <- covMatrix[2,2]*covMatrix[3,3] - covMatrix[2,3]^2
+  cosCoeff <- (covMatrix[1,2]*covMatrix[3,3] -
+                 covMatrix[1,3]*covMatrix[2,3])/denominator
+  sinCoeff <- (covMatrix[1,3]*covMatrix[2,2] -
+                 covMatrix[1,2]*covMatrix[2,3])/denominator
+  mParameter <- mean(vData) - cosCoeff*mean(costStar) - sinCoeff*mean(sentstar)
 
-  dataReg<-cos(beta+parteMobius) # Mobius result without intercept and amplitude
+  phiEst <- atan2(-sinCoeff, cosCoeff)   # acrophase (phi)
+  aParameter <- sqrt(cosCoeff^2 + sinCoeff^2)
+  betaParameter <- (phiEst+alphaParameter)%%(2*pi)
 
-  adj0<-M+A*dataReg # Mobius regression
-  RSS<-sum((vData-adj0)^2)/length(timePoints) # residual sum of squares
+  mobiusRegression <- mParameter + aParameter*cos(betaParameter + mobiusTerm)
+  residualSS <- sum((vData - mobiusRegression)^2)/length(timePoints)
 
-  devolver <- c(M,A,alpha,beta,omega,RSS)
-  return(devolver)
-
+  return(c(mParameter, aParameter, alphaParameter, betaParameter,
+           omegaParameter, residualSS))
 }
 
 
-###############################################################
+################################################################################
 # Internal function: to find the optimal initial parameter estimation
 # Arguments:
 #    vData: data to be fitted an FMM model.
@@ -59,11 +64,11 @@ step1FMM <- function(alphaOmega, vData, timePoints) {
 #           M, A, alpha, beta, omega, RSS as columns.
 # Returns the optimal row of step1 argument.
 # optimum: minimum RSS with several stability conditions.
-###############################################################
-bestStep1 <- function(vData,step1){
+################################################################################
+bestStep1 <- function(vData, step1){
 
   # step1 in decreasing order by RSS
-  ordenMinRSS <- order(step1[,"RSS"])
+  orderedModelParameters <- order(step1[,"RSS"])
 
   maxVData <- max(vData)
   minVData <- min(vData)
@@ -71,95 +76,85 @@ bestStep1 <- function(vData,step1){
 
   # iterative search: go through rows ordered step 1
   #    until the first one that verifies the stability conditions
-  condicionContinuar <- TRUE
+  bestModelFound <- FALSE
   i <- 1
-  while(condicionContinuar){
+  while(!bestModelFound){
     # parameters
-    M <- step1[ordenMinRSS[i],"M"]
-    A <- step1[ordenMinRSS[i],"A"]
-    alpha <- step1[ordenMinRSS[i],"alpha"]
-    beta <- step1[ordenMinRSS[i],"beta"]
-    omega <- step1[ordenMinRSS[i],"omega"]
-    sigma <- sqrt(step1[ordenMinRSS[i],"RSS"]*n/(n-5))
+    mParameter <- step1[orderedModelParameters[i], "M"]
+    aParameter <- step1[orderedModelParameters[i], "A"]
+    alphaParameter <- step1[orderedModelParameters[i], "alpha"]
+    betaParameter <- step1[orderedModelParameters[i], "beta"]
+    omegaParameter <- step1[orderedModelParameters[i], "omega"]
+    sigma <- sqrt(step1[orderedModelParameters[i], "RSS"]*n/(n-5))
 
     # stability conditions
-    maxi <- M + A
-    mini <- M - A
-    rest1 <- maxi <= maxVData+1.96*sigma
-    rest2 <- mini >= minVData-1.96*sigma
+    amplitudeUpperBound <- mParameter + aParameter
+    amplitudeLowerBound <- mParameter - aParameter
+    rest1 <- amplitudeUpperBound <= maxVData + 1.96*sigma
+    rest2 <- amplitudeLowerBound >= minVData - 1.96*sigma
 
     # it is necessary to check that there are no NA,
     # because it can be an extreme solution
-    if(is.na(rest1)) rest1 <- FALSE
-    if(is.na(rest2)) rest2 <- FALSE
-
-    if(rest1 & rest2){
-      condicionContinuar <- FALSE
-    } else {
+    if(is.na(rest1) | is.na(rest2))
       i <- i+1
-    }
+    else
+      bestModelFound <- TRUE
 
-    if(i > nrow(step1)){
+    if(i > nrow(step1))
       return(NULL)
-    }
   }
-  return(step1[ordenMinRSS[i],])
 
+  return(step1[orderedModelParameters[i],])
 }
 
-###############################################################
+################################################################################
 # Internal function: second step of FMM fitting process
 # Arguments:
-#   param: M, A, alpha, beta, omega initial parameter estimations
+#   parameters: M, A, alpha, beta, omega initial parameter estimations
 #   vData: data to be fitted an FMM model.
 #   timePoints: one single period time points.
 #   omegaMax: max value for omega.
-###############################################################
-step2FMM <- function(param, vData, timePoints, omegaMax){
+################################################################################
+step2FMM <- function(parameters, vData, timePoints, omegaMax){
 
   n <- length(timePoints)
 
-  # FMM model
-  ffMob<-param[1] + param[2] * cos(param[4]+2*atan2(param[5]*sin((timePoints-param[3])/2),cos((timePoints-param[3])/2)))
-
-  # Residual sum of squares
-  RSS<-sum((ffMob - vData)^2)/n
-  sigma <- sqrt(RSS*n/(n-5))
+  # FMM model and residual sum of squares
+  modelFMM <- parameters[1] + parameters[2] *
+    cos(parameters[4]+2*atan2(parameters[5]*sin((timePoints - parameters[3])/2),
+                                cos((timePoints - parameters[3])/2)))
+  residualSS <- sum((modelFMM - vData)^2)/n
+  sigma <- sqrt(residualSS*n/(n - 5))
 
   # When amplitude condition is valid, it returns RSS
   # else it returns infinite.
-  maxi<-param[1]+param[2]
-  mini<-param[1]-param[2]
-  rest1 <- maxi <= max(vData)+1.96*sigma
-  rest2 <- mini >= min(vData)-1.96*sigma
+  amplitudeUpperBound <- parameters[1] + parameters[2]
+  amplitudeLowerBound <- parameters[1] - parameters[2]
+  rest1 <- amplitudeUpperBound <= max(vData) + 1.96*sigma
+  rest2 <- amplitudeLowerBound >= min(vData) - 1.96*sigma
 
   # Other integrity conditions that must be met
-  rest3 <- param[2] > 0         # A > 0
-  rest4 <- param[5] > 0         # omega > 0
-  rest5 <- param[5] <= omegaMax # omega <= omegaMax
-
-  if(rest1 & rest2 & rest3 & rest4 & rest5){
-    return(RSS)
-  }else{
-    return(Inf)
-    #return(10^10)
-  }
-
+  rest3 <- parameters[2] > 0  # A > 0
+  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax # omega > 0 and omega <= omegaMax
+  if(rest1 & rest2 & rest3 & rest4)
+    return(residualSS)
+  else
+    return(10^10)
 }
 
-
-##################################################################
+################################################################################
 # Internal function: fitFMM from a FMM object
 # Same arguments as fitFMM function and two
 # additional arguments:
 #   objectFMM: to start fitting from a previous objectFMM
 #   staticComponents: vector containing the components that will not be modified
-##################################################################
-refineFMM <- function(vData, nPeriods = 1, timePoints = NULL,
-                      nback = 1, betaRestrictions = 1:nback, omegaRestrictions = 1:nback, maxiter = nback,
-                      stopFunction = alwaysFalse, objectFMM = NULL, staticComponents = NULL,
-                      lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                      numReps = 3, showProgress = TRUE, showTime = TRUE, parallelize=FALSE) {
+################################################################################
+refineFMM <- function(vData, nPeriods = 1, timePoints = NULL, nback = 1,
+                      betaRestrictions = 1:nback, omegaRestrictions = 1:nback,
+                      maxiter = nback, stopFunction = alwaysFalse,
+                      objectFMM = NULL, staticComponents = NULL,
+                      lengthAlphaGrid = 48, lengthOmegaGrid = 24, numReps = 3,
+                      showProgress = TRUE, showTime = TRUE, parallelize=FALSE) {
 
   alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid)
   omegaMax = 1
@@ -170,9 +165,9 @@ refineFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   if(nPeriods > 1){
     n <- length(vData)
     if(n%%nPeriods != 0) stop("Data length is not a multiple of nPeriods")
-    M <- matrix(vData,nrow=nPeriods,ncol=n/nPeriods,byrow = TRUE)
+    dataMatrix <- matrix(vData,nrow=nPeriods,ncol=n/nPeriods,byrow = TRUE)
     #vDataAnt <- vData
-    summarizedData <- apply(M,2,mean)
+    summarizedData <- apply(dataMatrix,2,mean)
   } else {
     summarizedData <- vData
   }
@@ -186,21 +181,30 @@ refineFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   }
 
   if(nback == 1){
-    res <- fitFMM_unit(summarizedData, timePoints, lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax,
-                       omegaGrid,numReps)
+    fittedFMM <- fitFMM_unit(summarizedData, timePoints, lengthAlphaGrid,
+                       lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps)
   } else {
-    if(length(unique(betaRestrictions)) == nback & length(unique(omegaRestrictions)) == nback){
-      res <- fitFMM_back(summarizedData, timePoints, nback, maxiter, stopFunction, objectFMM, staticComponents,
-                         lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps, showProgress)
+    if(length(unique(betaRestrictions)) == nback &
+       length(unique(omegaRestrictions)) == nback){
+      fittedFMM <- fitFMM_back(summarizedData, timePoints, nback, maxiter,
+                         stopFunction, objectFMM, staticComponents,
+                         lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax,
+                         omegaGrid, numReps, showProgress)
     } else {
-      if(length(unique(omegaRestrictions)) == nback & length(unique(betaRestrictions)) != nback){
-        res <- fitFMM_restr_beta(summarizedData, timePoints, nback, betaRestrictions, maxiter, stopFunction, objectFMM,
-                                 staticComponents, lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps, showProgress)
+      if(length(unique(omegaRestrictions)) == nback &
+         length(unique(betaRestrictions)) != nback){
+        fittedFMM <- fitFMM_restr_beta(summarizedData, timePoints, nback,
+                                 betaRestrictions, maxiter, stopFunction,
+                                 objectFMM, staticComponents, lengthAlphaGrid,
+                                 lengthOmegaGrid, alphaGrid, omegaMax,omegaGrid,
+                                 numReps, showProgress)
       } else {
         if(showProgress)
           warning("showProgress not available when specifying omegaRestrictions.")
-        res <- fitFMM_restr(summarizedData, timePoints, nback, betaRestrictions, omegaRestrictions, maxiter, stopFunction, objectFMM,
-                            staticComponents, lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps, parallelize)
+        fittedFMM <- fitFMM_restr(summarizedData, timePoints, nback, betaRestrictions,
+                            omegaRestrictions, maxiter, stopFunction, objectFMM,
+                            staticComponents, lengthAlphaGrid, lengthOmegaGrid,
+                            alphaGrid, omegaMax, omegaGrid, numReps,parallelize)
       }
     }
   }
@@ -210,39 +214,40 @@ refineFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     cat(time.end-time.ini)
   }
 
-  res@nPeriods <- nPeriods
-  res@data <- vData
+  fittedFMM@nPeriods <- nPeriods
+  fittedFMM@data <- vData
 
-  ordenVariabilidad <- order(res@R2,decreasing = TRUE)
+  explainedVarOrder <- order(fittedFMM@R2,decreasing = TRUE)
 
-  res@A <- res@A[ordenVariabilidad]
-  res@alpha <- res@alpha[ordenVariabilidad]
-  res@beta <- res@beta[ordenVariabilidad]
-  res@omega <- res@omega[ordenVariabilidad]
-  res@R2 <- res@R2[ordenVariabilidad]
+  fittedFMM@A <- fittedFMM@A[explainedVarOrder]
+  fittedFMM@alpha <- fittedFMM@alpha[explainedVarOrder]
+  fittedFMM@beta <- fittedFMM@beta[explainedVarOrder]
+  fittedFMM@omega <- fittedFMM@omega[explainedVarOrder]
+  fittedFMM@R2 <- fittedFMM@R2[explainedVarOrder]
 
-  return(res)
-
+  return(fittedFMM)
 }
 
-##################################################################
-# Internal function: to calculate the percentage of variability explained by the FMM model
+################################################################################
+# Internal function: to calculate the percentage of variability explained by
+#   the FMM model
 # Arguments:
 #   vData: data to be fitted an FMM model.
 #   pred: fitted values.
-##################################################################
+################################################################################
 PV <- function(vData,pred){
   meanVData <- mean(vData)
   return(1 - sum((vData-pred)^2)/sum((vData-meanVData)^2))
 }
 
-##################################################################
-# Internal function: to calculate the percentage of variability explained by each component of FMM model
+################################################################################
+# Internal function: to calculate the percentage of variability explained by
+#   each component of FMM model
 # Arguments:
 #   vData: data to be fitted an FMM model.
 #   timePoints: one single period time points.
 #   alpha, beta, omega: vectors of corresponding parameter estimates.
-##################################################################
+################################################################################
 PVj <- function(vData, timePoints, alpha, beta, omega){
 
   # fitted values of each wave
@@ -272,29 +277,59 @@ PVj <- function(vData, timePoints, alpha, beta, omega){
 
 }
 
-
-
-##################################################################
+################################################################################
 # Internal function: to build a sequence of equally time points spaced
 #                    in range [0,2*pi].
 # Arguments:
 #   n: secuence length.
-##################################################################
+################################################################################
 seqTimes <- function(n){
   timePoints<-seq(0,2*pi,by=2*pi/n)
   timePoints<-timePoints[-length(timePoints)]
   return(timePoints)
 }
 
-
-##################################################################
+################################################################################
 # Internal function: to compute the angular mean.
 # Arguments:
 #   angles: input vector of angles.
-##################################################################
+################################################################################
 #Computes the Angular Mean
 angularmean <- function(angles){
   n <- length(angles)
   a.mean <- atan2(sum(sin(angles)),sum(cos(angles)))
   return(a.mean)
 }
+
+################################################################################
+# Internal function: return parallelized apply function depending on the OS.
+# Returns function to be used.
+################################################################################
+getParallelizedApply <- function(){
+
+  getParallelApply_Windows <- function(parallelCluster){
+    parallelizedApply <- function(FUN, x, ...) t(parallel::parApply(parallelCluster, FUN = FUN, x = x, ...))
+    return(parallelizedApply)
+  }
+
+  parallelFunction_Unix<-function(nCores){
+    # A paralellized apply function does not exist, so it must be translated to a lapply
+    parallelizedApply <- function(FUN, x, ...){
+      matrix(unlist(parallel::mclapply(X = asplit(x, 1), FUN = FUN, ...)),
+             nrow = nrow(x), byrow = T)
+    }
+    return(parallelizedApply)
+  }
+
+  nCores <- parallel::detectCores() - 1
+
+  if(.Platform$OS.type == "windows"){
+    parallelCluster <- parallel::makePSOCKcluster(nCores)
+    parallelApply <- getParallelApply_Windows(parallelCluster)
+  }else{
+    parallelApply <- parallelFunction_Unix(nCores)
+  }
+
+  return(parallelApply)
+}
+
