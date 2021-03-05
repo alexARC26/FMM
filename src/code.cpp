@@ -6,11 +6,6 @@
 using namespace Rcpp;
 using namespace arma;
 
-arma::mat myFastLm(const arma::mat& X, const arma::colvec& y) {
-  arma::colvec coef = arma::solve(X, y);
-  return coef;
-}
-
 //' Internal function: to estimate M, A and beta initial parameters also returns residual sum of squared (RSS).
 //'
 //' @param alphaOmegaParameters vector of the parameters alpha and omega.
