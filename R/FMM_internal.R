@@ -301,33 +301,25 @@ angularmean <- function(angles){
   return(a.mean)
 }
 
-#<<<<<<< HEAD
-#=======
 ################################################################################
 # Internal function: return parallelized apply function depending on the OS.
 # Returns function to be used.
 ################################################################################
-getParallelizedApply<-function(){
-#>>>>>>> 06b64c53d15fecfa05a94f49d521122191b1dd25
+getParallelizedApply <- function(){
 
-  getParallelApply_Windows<-function(parallelCluster){
-    parallelizedApply<-function(FUN, x, ...) t(parallel::parApply(parallelCluster, FUN = FUN, x=x, ...))
-
+  getParallelApply_Windows <- function(parallelCluster){
+    parallelizedApply <- function(FUN, x, ...) t(parallel::parApply(parallelCluster, FUN = FUN, x = x, ...))
     return(parallelizedApply)
   }
 
   parallelFunction_Unix<-function(nCores){
-
     # A paralellized apply function does not exist, so it must be translated to a lapply
-    parallelizedApply<-function(FUN, x, ...){
-      matrix(unlist(parallel::mclapply(X=asplit(x,1),
-                                       FUN=FUN, ...)),
+    parallelizedApply <- function(FUN, x, ...){
+      matrix(unlist(parallel::mclapply(X = asplit(x, 1), FUN = FUN, ...)),
              nrow = nrow(x), byrow = T)
     }
-
     return(parallelizedApply)
   }
-
 
   nCores <- parallel::detectCores() - 1
 
@@ -340,3 +332,4 @@ getParallelizedApply<-function(){
 
   return(parallelApply)
 }
+
