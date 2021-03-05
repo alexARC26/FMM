@@ -302,8 +302,38 @@ angularmean <- function(angles){
 }
 
 ################################################################################
-# Internal function: preparing core cluster for parallelization
-# Returns a core cluster to operate with.
+# Internal function: return parallelized apply function depending on the OS.
+# Returns function to be used.
 ################################################################################
+getParallelizedApply<-function(){
+
+  getParallelApply_Windows<-function(parallelCluster){
+    parallelizedApply<-function(FUN, x, ...) t(parallel::parApply(parallelCluster, FUN = FUN, x=x, ...))
+
+    return(parallelizedApply)
+  }
+
+  parallelFunction_Unix<-function(nCores){
+
+    # A paralellized apply function does not exist, so it must be translated to a lapply
+    parallelizedApply<-function(FUN, x, ...){
+      matrix(unlist(parallel::mclapply(X=asplit(x,1),
+                                       FUN=FUN, ...)),
+             nrow = nrow(x), byrow = T)
+    }
+
+    return(parallelizedApply)
+  }
 
 
+  nCores <- parallel::detectCores() - 1
+
+  if(.Platform$OS.type == "windows"){
+    parallelCluster <- parallel::makePSOCKcluster(nCores)
+    parallelApply <- getParallelApply_Windows(parallelCluster)
+  }else{
+    parallelApply <- parallelFunction_Unix(nCores)
+  }
+
+  return(parallelApply)
+}
