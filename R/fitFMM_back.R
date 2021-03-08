@@ -24,7 +24,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
                       omegaMax = 1,
                       omegaGrid = exp(seq(log(0.0001),log(omegaMax),
                                           length.out=lengthOmegaGrid)),
-                      numReps = 3, showProgress = TRUE, parallelCluster = NULL,
+                      numReps = 3, showProgress = TRUE, usedApply,
                       useRcpp = FALSE){
 
   n <- length(vData)
@@ -106,7 +106,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
         # component j fitting using fitFMM_unit function
         ajusteComponente[[j]] <- fitFMM_unit(vDataAjuste,timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
                                             lengthOmegaGrid = lengthOmegaGrid, alphaGrid = alphaGrid[[j]], omegaMax = omegaMax,
-                                            omegaGrid = omegaGrid[[j]], numReps = numReps, parallelCluster, useRcpp)
+                                            omegaGrid = omegaGrid[[j]], numReps = numReps, usedApply, useRcpp)
         predichosComponente[[j]] <- getFittedValues(ajusteComponente[[j]])
 
       }
@@ -205,7 +205,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
   adjMob <- predict(regresion)
 
   # Residual sum of squares
-  SSE <- sum((adjMob-vData)^2)
+  SSE <- sum((adjMob - vData)^2)
 
   names(A) <- paste("A",1:length(A),sep="")
 
