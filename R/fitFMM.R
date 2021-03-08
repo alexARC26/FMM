@@ -32,9 +32,7 @@
 #     showTime: TRUE to display execution time on the console.
 #     parallelize: TRUE to use parallelized procedure to fit restricted
 #                  FMM model.
-#     useRcpp: TRUE to use Rcpp function. For data with more than 1500 points, Rcpp
-#              is used by default. If parallelize argument is true, then
-#              useRcpp is ignored
+#     useRcpp: TRUE to use Rcpp function.
 fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                    nback = 1, betaRestrictions = 1:nback,
                    omegaRestrictions = 1:nback, maxiter = nback,
