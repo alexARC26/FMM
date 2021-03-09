@@ -16,7 +16,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
                       omegaMax = 1,
                       omegaGrid = exp(seq(log(0.0001), log(omegaMax),
                                           length.out = lengthOmegaGrid)),
-                      numReps = 3, usedApply, useRcpp = FALSE){
+                      numReps = 3, parallelCluster = NULL, useRcpp = FALSE){
 
   n <- length(vData)
   grid <- expand.grid(alphaGrid,omegaGrid)
@@ -28,9 +28,13 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   # For faster estimates, parallelized and rcpp implementations are available
   usedFunction <- ifelse(useRcpp, step1FMMrcpp, step1FMM)
 
-  step1 <- usedApply(FUN = usedFunction, X = grid, vData = vData,
-                     timePoints = timePoints)
-
+  if(!is.null(parallelCluster)){
+    step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = usedFunction,
+                        vData = vData, timePoints = timePoints))
+  }else{
+    step1 <- t(apply(grid, 1, FUN = usedFunction, vData = vData,
+                     timePoints = timePoints))
+  }
   colnames(step1) <- step1OutputNames
 
   # We find the optimal initial parameters,
@@ -68,8 +72,13 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
     grid <- as.matrix(expand.grid(alphaGrid,omegaGrid))
 
     # Step 1: initial parameters
-    step1 <- usedApply(FUN = usedFunction, X = grid, vData = vData,
-                       timePoints = timePoints)
+    if(!is.null(parallelCluster)){
+      step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = step1FMM,
+                          vData = vData, timePoints = timePoints))
+    }else{
+      step1 <- t(apply(grid, 1, FUN = usedFunction, vData = vData,
+                       timePoints = timePoints))
+    }
     colnames(step1) <- step1OutputNames
     prevBestPar <- bestPar
     bestPar <- bestStep1(vData,step1)
