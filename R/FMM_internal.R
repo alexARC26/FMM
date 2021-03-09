@@ -308,19 +308,20 @@ angularmean <- function(angles){
 getApply <- function(parallelize = FALSE){
 
   getApply_Rbase <- function(){
-    usedApply <- function(FUN, x, ...) t(apply(x = x, 1, FUN = FUN, ...))
+    usedApply <- function(FUN, X, ...) t(apply(X = X, 1, FUN = FUN, ...))
   }
 
   getParallelApply_Windows <- function(parallelCluster){
-    usedApply <- function(FUN, x, ...) t(parallel::parApply(parallelCluster, FUN = FUN, x = x, ...))
+    usedApply <- function(FUN, X, ...) t(parallel::parApply(parallelCluster, FUN = FUN,
+                                                            X = X, MARGIN = 1, ...))
     return(usedApply)
   }
 
   parallelFunction_Unix<-function(nCores){
     # A parallelized apply function does not exist, so it must be translated to a lapply
-    usedApply <- function(FUN, x, ...){
-      matrix(unlist(parallel::mclapply(X = asplit(x, 1), FUN = FUN, ...)),
-             nrow = nrow(x), byrow = T)
+    usedApply <- function(FUN, X, ...){
+      matrix(unlist(parallel::mclapply(X = asplit(X, 1), FUN = FUN, ...)),
+             nrow = nrow(X), byrow = T)
     }
     return(usedApply)
   }

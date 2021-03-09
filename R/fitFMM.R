@@ -75,23 +75,14 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     }
   }
 
-  # If parallelization is allowed, the parallelCluster is registered
-  if(parallelize){
-    requireNamespace("doParallel", quietly = TRUE)
-    nCores <- 0.75*parallel::detectCores()
-    parallelCluster <- parallel::makePSOCKcluster(nCores, outfile = "")
-    doParallel::registerDoParallel(parallelCluster)
-  }else{
-    parallelCluster <- NULL
-  }
-
-
+  # used apply function for compute FMM models
+  usedApply <- getApply(parallelize)
 
   if(nback == 1){
     fittedFMM <- fitFMM_unit(vData = summarizedData, timePoints = timePoints,
                        lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                        alphaGrid = alphaGrid, omegaMax = omegaMax, omegaGrid = omegaGrid,
-                       numReps = numReps, parallelCluster = parallelCluster, useRcpp = useRcpp)
+                       numReps = numReps, usedApply = usedApply, useRcpp)
 
   } else {
     if(length(unique(betaRestrictions)) == nback &
@@ -99,7 +90,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
       fittedFMM <- fitFMM_back(summarizedData,timePoints, nback, maxiter,stopFunction,
                          objectFMM, staticComponents, lengthAlphaGrid,
                          lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid,
-                         numReps, showProgress, parallelCluster, useRcpp )
+                         numReps, showProgress, usedApply = usedApply, useRcpp )
     } else {
       if(length(unique(omegaRestrictions)) == nback &
          length(unique(betaRestrictions)) != nback){
@@ -116,11 +107,6 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                                        showProgress)
       }
     }
-  }
-
-  # After the calculus the cores are given back
-  if(parallelize){
-    parallel::stopCluster(parallelCluster)
   }
 
   if(showTime & showProgress){
