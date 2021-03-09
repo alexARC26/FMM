@@ -76,7 +76,8 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   }
 
   # used apply function for compute FMM models
-  usedApply <- getApply(parallelize)
+  usedApply_Cluster <- getApply(parallelize)
+  usedApply <- usedApply_Cluster[[1]]
 
   if(nback == 1){
     fittedFMM <- fitFMM_unit(vData = summarizedData, timePoints = timePoints,
@@ -108,6 +109,10 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
       }
     }
   }
+
+  cluster <- usedApply_Cluster[[2]]
+  if(!is.null(cluster)) parallel::stopCluster(cluster)
+
 
   if(showTime & showProgress){
     time.end <- Sys.time()

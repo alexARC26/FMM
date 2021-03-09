@@ -331,17 +331,19 @@ getApply <- function(parallelize = FALSE){
   if(parallelize){
     # different ways to implement parallelization depending on OS:
     if(.Platform$OS.type == "windows"){
-      parallelCluster <- parallel::makePSOCKcluster(nCores, autoStop = TRUE)
+      parallelCluster <- parallel::makePSOCKcluster(nCores)
       registerDoParallel(parallelCluster)
       usedApply <- getParallelApply_Windows(parallelCluster)
     }else{
       usedApply <- parallelFunction_Unix(nCores)
+      parallelCluster<-NULL
     }
   }else{
     # R base apply:
     usedApply <- getApply_Rbase()
+    parallelCluster<-NULL
   }
 
-  return(usedApply)
+  return(list(usedApply, parallelCluster))
 }
 
