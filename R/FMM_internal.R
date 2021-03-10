@@ -336,12 +336,12 @@ getApply <- function(parallelize = FALSE){
       usedApply <- getParallelApply_Windows(parallelCluster)
     }else{
       usedApply <- parallelFunction_Unix(nCores)
-      parallelCluster<-NULL
+      parallelCluster <- NULL
     }
   }else{
     # R base apply:
     usedApply <- getApply_Rbase()
-    parallelCluster<-NULL
+    parallelCluster <- NULL
   }
 
   return(list(usedApply, parallelCluster))
