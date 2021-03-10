@@ -24,8 +24,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
                       omegaMax = 1,
                       omegaGrid = exp(seq(log(0.0001),log(omegaMax),
                                           length.out=lengthOmegaGrid)),
-                      numReps = 3, showProgress = TRUE, usedApply,
-                      useRcpp = FALSE){
+                      numReps = 3, showProgress = TRUE, usedApply){
 
   n <- length(vData)
 

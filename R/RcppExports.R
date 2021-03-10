@@ -11,3 +11,13 @@ step1FMMrcpp <- function(alphaOmegaParameters, vData, timePoints) {
     .Call(`_FMM_step1FMMrcpp`, alphaOmegaParameters, vData, timePoints)
 }
 
+#' Internal function: to estimate M, A and beta initial parameters also returns residual sum of squared (RSS).
+#'
+#' @param alphaOmegaParameters vector of the parameters alpha and omega.
+#' @param vData: data to be fitted an FMM model.
+#' @param timePoints: one single period time points.
+#' @export
+step1FMMrcpp2 <- function(alphaOmegaParameters, vData, timePoints) {
+    .Call(`_FMM_step1FMMrcpp2`, alphaOmegaParameters, vData, timePoints)
+}
+

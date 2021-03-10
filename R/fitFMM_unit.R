@@ -16,7 +16,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
                       omegaMax = 1,
                       omegaGrid = exp(seq(log(0.0001), log(omegaMax),
                                           length.out = lengthOmegaGrid)),
-                      numReps = 3, usedApply, useRcpp = FALSE){
+                      numReps = 3, usedApply){
 
   n <- length(vData)
   grid <- expand.grid(alphaGrid,omegaGrid)
@@ -26,9 +26,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   # omega are initially fixed and cosinor model is used to calculate the rest of the parameters.
   # step1FMM function is used to make this estimate.
   # For faster estimates, parallelized and rcpp implementations are available
-  usedFunction <- ifelse(useRcpp, step1FMMrcpp, step1FMM)
-
-  step1 <- usedApply(FUN = usedFunction, X = grid, vData = vData,
+  step1 <- usedApply(FUN = step1FMM, X = grid, vData = vData,
                      timePoints = timePoints)
 
   colnames(step1) <- step1OutputNames
@@ -68,7 +66,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
     grid <- as.matrix(expand.grid(alphaGrid,omegaGrid))
 
     # Step 1: initial parameters
-    step1 <- usedApply(FUN = usedFunction, X = grid, vData = vData,
+    step1 <- usedApply(FUN = step1FMM, X = grid, vData = vData,
                        timePoints = timePoints)
     colnames(step1) <- step1OutputNames
     prevBestPar <- bestPar
