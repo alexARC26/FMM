@@ -105,7 +105,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
         # component j fitting using fitFMM_unit function
         ajusteComponente[[j]] <- fitFMM_unit(vDataAjuste,timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
                                             lengthOmegaGrid = lengthOmegaGrid, alphaGrid = alphaGrid[[j]], omegaMax = omegaMax,
-                                            omegaGrid = omegaGrid[[j]], numReps = numReps, usedApply, useRcpp)
+                                            omegaGrid = omegaGrid[[j]], numReps = numReps, usedApply)
         predichosComponente[[j]] <- getFittedValues(ajusteComponente[[j]])
 
       }
@@ -134,7 +134,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
     }
     if(!is.null(prevAdjMob)){
 
-      if(PV(vData,prevAdjMob) > PV(vData,adjMob)){
+      if(PV(vData, prevAdjMob) > PV(vData, adjMob)){
         ajusteComponente <- ajusteComponenteAnt
         adjMob <- prevAdjMob
         break

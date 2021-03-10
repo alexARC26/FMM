@@ -83,7 +83,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     fittedFMM <- fitFMM_unit(vData = summarizedData, timePoints = timePoints,
                        lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                        alphaGrid = alphaGrid, omegaMax = omegaMax, omegaGrid = omegaGrid,
-                       numReps = numReps, usedApply = usedApply, useRcpp)
+                       numReps = numReps, usedApply = usedApply)
 
   } else {
     if(length(unique(betaRestrictions)) == nback &
@@ -91,7 +91,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
       fittedFMM <- fitFMM_back(summarizedData,timePoints, nback, maxiter,stopFunction,
                          objectFMM, staticComponents, lengthAlphaGrid,
                          lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid,
-                         numReps, showProgress, usedApply = usedApply, useRcpp )
+                         numReps, showProgress, usedApply = usedApply)
     } else {
       if(length(unique(omegaRestrictions)) == nback &
          length(unique(betaRestrictions)) != nback){

@@ -312,9 +312,9 @@ getApply <- function(parallelize = FALSE){
   }
 
   getParallelApply_Windows <- function(parallelCluster){
-    #usedApply <- function(FUN, X, ...) t(parallel::parApply(parallelCluster, FUN = FUN,
-    #                                                        X = X, MARGIN = 1, ...))
-    #return(usedApply)
+    usedApply <- function(FUN, X, ...) t(parallel::parApply(parallelCluster, FUN = FUN,
+                                                            X = X, MARGIN = 1, ...))
+    return(usedApply)
   }
 
   parallelFunction_Unix<-function(nCores){

@@ -28,7 +28,6 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   # For faster estimates, parallelized and rcpp implementations are available
   step1 <- usedApply(FUN = step1FMM, X = grid, vData = vData,
                      timePoints = timePoints)
-
   colnames(step1) <- step1OutputNames
 
   # We find the optimal initial parameters,
