@@ -28,63 +28,31 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
 
   n <- length(vData)
 
-  if(!is.list(alphaGrid)){
-    aux <- alphaGrid
-    alphaGrid <- list()
-    for(i in 1:nback){
-      alphaGrid[[i]] <- aux
-    }
-  }
+  if(!is.list(alphaGrid))
+    alphaGrid <- replicateGridAsList(grid = alphaGrid, nback = nback)
 
-  if(!is.list(omegaGrid)){
-    aux <- omegaGrid
-    omegaGrid <- list()
-    for(i in 1:nback){
-      omegaGrid[[i]] <- aux
-    }
-  }
+  if(!is.list(omegaGrid))
+    omegaGrid <- replicateGridAsList(grid = omegaGrid, nback = nback)
 
   if(showProgress){
-    marcasTotales <- 50
-    granoInforme <- 2
+    totalMarks <- 50
+    partialMarkLength <- 2
     cat("|")
-    for(m in 1:marcasTotales) cat("-")
+    for(m in 1:totalMarks) cat("-")
     cat("|\n")
     cat("|")
-    porcentajeCompletado <- 0.00001
-    porcentajeAntes <- porcentajeCompletado
+    completedPercentage <- 0.00001
+    previousPercentage <- completedPercentage
   }
 
   # Object initialization.
   predichosComponente <- list()
   ajusteComponente <- list()
 
-  # without previous objectFMM to refine
-  if(is.null(objectFMM)){
-    if(!(is.null(staticComponents))){
-      stop("Static components only supported through previous objectFMM")
-    }
-    for(i in 1:nback){
-      predichosComponente[[i]] <- rep(0,n)
-    }
-    prevAdjMob <- NULL
-
-    # with previous objectFMM to refine
-  } else {
-    prevAdjMob <- getFittedValues(objectFMM)
-    nbackAnterior <- length(getAlpha(objectFMM))
-    if(nbackAnterior > nback){
-      stop("Impossible to reduce dimensions from input objectFMM")
-    }
-    for(i in 1:nback){
-      if(i <= nbackAnterior){
-        predichosComponente[[i]] <- getM(objectFMM)/nbackAnterior + getA(objectFMM)[i]*cos(getBeta(objectFMM)[i] +
-                                              2*atan(getOmega(objectFMM)[i]*tan((timePoints-getAlpha(objectFMM)[i])/2)))
-      } else {
-        predichosComponente[[i]] <- rep(0,n)
-      }
-    }
+  for(i in 1:nback){
+    predichosComponente[[i]] <- rep(0,n)
   }
+  prevAdjMob <- NULL
 
   # Backfitting algorithm: iteration
   for(i in 1:maxiter){
@@ -92,35 +60,28 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
     # Backfitting algorithm: component
     for(j in 1:nback){
 
-      if(is.null(objectFMM) | !(j %in% staticComponents)){
-
-        # data for component j: difference between vData and all other components fitted values
-        vDataAjuste <- vData
-        for(k in 1:nback){
-          if(j != k){
-            vDataAjuste <- vDataAjuste - predichosComponente[[k]]
-          }
-        }
-
-        # component j fitting using fitFMM_unit function
-        ajusteComponente[[j]] <- fitFMM_unit(vDataAjuste,timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
-                                            lengthOmegaGrid = lengthOmegaGrid, alphaGrid = alphaGrid[[j]], omegaMax = omegaMax,
-                                            omegaGrid = omegaGrid[[j]], numReps = numReps, usedApply)
-        predichosComponente[[j]] <- getFittedValues(ajusteComponente[[j]])
-
+      # data for component j: difference between vData and all other components fitted values
+      vDataAjuste <- vData
+      for(k in 1:nback){
+        if(j != k) vDataAjuste <- vDataAjuste - predichosComponente[[k]]
       }
 
+      # component j fitting using fitFMM_unit function
+      ajusteComponente[[j]] <- fitFMM_unit(vDataAjuste,timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
+                                            lengthOmegaGrid = lengthOmegaGrid, alphaGrid = alphaGrid[[j]], omegaMax = omegaMax,
+                                            omegaGrid = omegaGrid[[j]], numReps = numReps, usedApply)
+      predichosComponente[[j]] <- ajusteComponente[[j]]@fittedValues
       # showProgress
       if(showProgress){
-        porcentajeCompletado <- porcentajeCompletado + 100/(nback*maxiter)
-        if(ceiling(porcentajeAntes) < floor(porcentajeCompletado)){
-          numMarcas <- sum((seq(ceiling(porcentajeAntes),floor(porcentajeCompletado),by=1)%%granoInforme == 0))
+        completedPercentage <- completedPercentage + 100/(nback*maxiter)
+        if(ceiling(previousPercentage) < floor(completedPercentage)){
+          numMarcas <- sum((seq(ceiling(previousPercentage), floor(completedPercentage), by=1)%%partialMarkLength == 0))
         } else {
           numMarcas <- 0
         }
         if (numMarcas > 0) {
           for(m in 1:numMarcas) cat("=")
-          porcentajeAntes <- porcentajeCompletado
+          previousPercentage <- completedPercentage
         }
       }
 
@@ -140,7 +101,6 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
         break
       }
 
-
       if(stopFunction(vData,adjMob,prevAdjMob)){
         break
       }
@@ -154,16 +114,16 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
 
   # showProgress
   if(showProgress){
-    if(porcentajeCompletado < 100){
-      porcentajeCompletado <- 100
-      if(ceiling(porcentajeAntes) < floor(porcentajeCompletado)){
-        numMarcas <- sum((seq(ceiling(porcentajeAntes),floor(porcentajeCompletado),by=1)%%granoInforme == 0))
+    if(completedPercentage < 100){
+      completedPercentage <- 100
+      if(ceiling(previousPercentage) < floor(completedPercentage)){
+        numMarcas <- sum((seq(ceiling(previousPercentage),floor(completedPercentage),by=1)%%partialMarkLength == 0))
       } else {
         numMarcas <- 0
       }
       if (numMarcas > 0) {
         for(m in 1:numMarcas) cat("=")
-        porcentajeAntes <- porcentajeCompletado
+        previousPercentage <- completedPercentage
       }
     }
     cat("|\n")
@@ -193,7 +153,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
   # A and M estimates are recalculated by linear regression
   cos.phi <- list()
   for(j in 1:nback){
-    cos.phi[[j]] <- cos(beta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
+    cos.phi[[j]] <- cos(beta[j] + 2*atan(omega[j]*tan((timePoints - alpha[j])/2)))
   }
   M <- matrix(unlist(cos.phi),ncol=nback)
   regresion <- lm(vData ~ M)
@@ -206,7 +166,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
   # Residual sum of squares
   SSE <- sum((adjMob - vData)^2)
 
-  names(A) <- paste("A",1:length(A),sep="")
+  names(A) <- paste("A", 1:length(A), sep="")
 
   # Returns an object of class FMM.
   outMobius <- FMM(

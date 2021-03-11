@@ -301,6 +301,15 @@ angularmean <- function(angles){
   return(a.mean)
 }
 
+replicateGridAsList <- function(grid, nback){
+  gridCopy <- grid
+  grid <- list()
+  for(i in 1:nback){
+    grid[[i]] <- gridCopy
+  }
+  return(grid)
+}
+
 ################################################################################
 # Internal function: return parallelized apply function depending on the OS.
 # Returns function to be used.
