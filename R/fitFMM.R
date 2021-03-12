@@ -89,9 +89,8 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     if(length(unique(betaRestrictions)) == nback &
        length(unique(omegaRestrictions)) == nback){
       fittedFMM <- fitFMM_back(summarizedData,timePoints, nback, maxiter,stopFunction,
-                         objectFMM, staticComponents, lengthAlphaGrid,
-                         lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid,
-                         numReps, showProgress, usedApply = usedApply)
+                         lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax,
+                         omegaGrid, numReps, showProgress, usedApply = usedApply)
     } else {
       if(length(unique(omegaRestrictions)) == nback &
          length(unique(betaRestrictions)) != nback){
@@ -112,7 +111,6 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
 
   cluster <- usedApply_Cluster[[2]]
   if(!is.null(cluster)) parallel::stopCluster(cluster)
-
 
   if(showTime & showProgress){
     time.end <- Sys.time()
