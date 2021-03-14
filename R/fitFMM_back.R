@@ -52,7 +52,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
     # Backfitting algorithm: component
     for(j in 1:nback){
       # data for component j: difference between vData and all other components fitted values
-      backFittingData <- vData - apply(fittedValuesPerComponent[,-j], 1, sum)
+      backFittingData <- vData - apply(as.matrix(fittedValuesPerComponent[,-j]), 1, sum)
 
       # component j fitting using fitFMM_unit function
       fittedFMMPerComponent[[j]] <- fitFMM_unit(backFittingData, timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
