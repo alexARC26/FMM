@@ -46,6 +46,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
   prevFittedFMMvalues <- NULL
 
   # Backfitting algorithm: iteration
+  stopCriteria<-"Stopped by reaching maximum iterations ("
   for(i in 1:maxiter){
     # Backfitting algorithm: component
     for(j in 1:nback){
@@ -77,9 +78,11 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
       if(PV(vData, prevFittedFMMvalues) > PV(vData, fittedFMMvalues)){
         fittedFMMPerComponent <- previousFittedFMMPerComponent
         fittedFMMvalues <- prevFittedFMMvalues
+        stopCriteria<-"Stopped by reaching maximum R2 ("
         break
       }
       if(stopFunction(vData, fittedFMMvalues, prevFittedFMMvalues)){
+        stopCriteria<-"Stopped by the stopFunction ("
         break
       }
     }
@@ -101,12 +104,7 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
         previousPercentage <- completedPercentage
       }
     }
-    cat("|\n")
-    if(nIter == maxiter){
-      cat("Stopped by reaching maximum iterations (",nIter ,"iteration(s) )","\n")
-    } else {
-      cat("Stopped by the stopFunction (",nIter ,"iteration(s) )","\n")
-    }
+    cat("|\n", stopCriteria, nIter ,"iteration(s) )","\n")
   }
 
   alpha <- unlist(lapply(fittedFMMPerComponent, getAlpha))
