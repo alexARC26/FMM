@@ -302,11 +302,7 @@ angularmean <- function(angles){
 }
 
 replicateGrid <- function(grid, nback){
-  replicateGridUnit<-function(grid, nback){
-    return(replicate(n = nback, grid, simplify = FALSE))
-  }
-
-  return(lapply(X = grid, FUN = replicateGridUnit, nback = nback))
+  return(replicate(n = nback, grid, simplify = FALSE))
 }
 
 calculateCosPhi <- function(alpha, beta, omega, timePoints){
