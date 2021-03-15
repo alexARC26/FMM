@@ -103,17 +103,9 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
     }
     cat("|\n")
     if(nIter == maxiter){
-      if(nIter == 1){
-        cat("Stopped by reaching maximum iterations (",nIter ,"iteration )","\n")
-      } else {
-        cat("Stopped by reaching maximum iterations (",nIter ,"iterations )","\n")
-      }
+      cat("Stopped by reaching maximum iterations (",nIter ,"iteration(s) )","\n")
     } else {
-      if(nIter == 1){
-        cat("Stopped by the stopFunction (",nIter ,"iteration )","\n")
-      } else {
-        cat("Stopped by the stopFunction (",nIter ,"iterations )","\n")
-      }
+      cat("Stopped by the stopFunction (",nIter ,"iteration(s) )","\n")
     }
   }
 
