@@ -11,8 +11,7 @@ FMM <- setClass("FMM", slots = c(
   beta="numeric",
   omega="numeric",
   SSE="numeric",
-  R2="numeric",
-  nIter="numeric")
+  R2="numeric")
 )
 
 
@@ -30,6 +29,6 @@ getSummarizedData <- function(objFMM) { objFMM@summarizedData }
 getFittedValues <- function(objFMM) { objFMM@fittedValues }
 getSSE <- function(objFMM) { objFMM@SSE }
 getR2 <- function(objFMM) { objFMM@R2 }
-getNIter <- function(objFMM) { objFMM@nIter }
+
 
 

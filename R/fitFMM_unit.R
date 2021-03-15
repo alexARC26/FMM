@@ -108,10 +108,8 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
     summarizedData = vData,
     fittedValues = fittedFMMvalues,
     SSE = SSE,
-    R2 = PV(vData, fittedFMMvalues),
-    nIter = 0
+    R2 = PV(vData, fittedFMMvalues)
   )
-
   return(outMobius)
 }
 
