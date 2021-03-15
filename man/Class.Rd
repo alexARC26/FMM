@@ -51,6 +51,9 @@
     \item{@R2}{
         A numeric vector specifying the explained variance by each of the fitted FMM components.
     	}
+     \item{@nIter}{
+        A numeric value specifying the number of iterations of the fitting algorithm.
+    	}
 
 }
 
