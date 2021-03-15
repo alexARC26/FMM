@@ -75,7 +75,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     }
   }
 
-  # used apply function for compute FMM models
+  # Used apply function for compute FMM models
   usedApply_Cluster <- getApply(parallelize)
   usedApply <- usedApply_Cluster[[1]]
 

@@ -301,13 +301,20 @@ angularmean <- function(angles){
   return(a.mean)
 }
 
-replicateGridAsList <- function(grid, nback){
-  gridCopy <- grid
-  grid <- list()
-  for(i in 1:nback){
-    grid[[i]] <- gridCopy
+replicateGrid <- function(grid, nback){
+  replicateGridUnit<-function(grid, nback){
+    return(replicate(n = nback, grid, simplify = FALSE))
   }
-  return(grid)
+
+  return(lapply(X = grid, FUN = replicateGridUnit, nback = nback))
+}
+
+calculateCosPhi <- function(alpha, beta, omega, timePoints){
+  calculateSingleCosPhi <- function(alpha, beta, omega){
+    return(cos(beta + 2*atan(omega*tan((timePoints - alpha)/2))))
+  }
+
+  return(mapply(FUN=calculateSingleCosPhi, alpha=alpha, beta=beta, omega=omega))
 }
 
 ################################################################################

@@ -26,17 +26,16 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
   n <- length(vData)
 
   if(!is.list(alphaGrid))
-    alphaGrid <- replicateGridAsList(grid = alphaGrid, nback = nback)
+    alphaGrid <- replicateGrid(grid = alphaGrid, nback = nback)
 
   if(!is.list(omegaGrid))
-    omegaGrid <- replicateGridAsList(grid = omegaGrid, nback = nback)
+    omegaGrid <- replicateGrid(grid = omegaGrid, nback = nback)
 
   if(showProgress){
     totalMarks <- 50
     partialMarkLength <- 2
-    cat("|")
-    for(m in 1:totalMarks) cat("-")
-    cat("|\n|")
+    progressHeader<-paste(c("|",rep("-",totalMarks),"|\n|"), collapse ="")
+    cat(progressHeader)
     completedPercentage <- 0.00001
     previousPercentage <- completedPercentage
   }
@@ -44,7 +43,6 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
   # Object initialization.
   fittedValuesPerComponent <- matrix(rep(0, n*nback), ncol = nback)
   fittedFMMPerComponent <- list()
-
   prevFittedFMMvalues <- NULL
 
   # Backfitting algorithm: iteration
@@ -63,8 +61,9 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
       if(showProgress){
         completedPercentage <- completedPercentage + 100/(nback*maxiter)
         if(ceiling(previousPercentage) < floor(completedPercentage)){
-          numMarcas <- sum((seq(ceiling(previousPercentage), floor(completedPercentage), by = 1) %% partialMarkLength == 0))
-          for(m in 1:numMarcas) cat("=")
+          progressDone<-paste(rep("=",sum((seq(ceiling(previousPercentage), floor(completedPercentage), by = 1)
+                                           %% partialMarkLength == 0))), collapse ="")
+          cat(progressDone)
           previousPercentage <- completedPercentage
         }
       }
@@ -92,14 +91,12 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
   if(showProgress){
     if(completedPercentage < 100){
       completedPercentage <- 100
-      if(ceiling(previousPercentage) < floor(completedPercentage)){
-        numMarcas <- sum((seq(ceiling(previousPercentage),
-                              floor(completedPercentage), by = 1) %% partialMarkLength == 0))
-      } else {
-        numMarcas <- 0
-      }
-      if (numMarcas > 0) {
-        for(m in 1:numMarcas) cat("=")
+      nMarks <- ifelse(ceiling(previousPercentage) < floor(completedPercentage),
+                       sum((seq(ceiling(previousPercentage),
+                                floor(completedPercentage), by = 1) %% partialMarkLength == 0)),
+                       0)
+      if (nMarks > 0) {
+        cat(paste(rep("=",nMarks), collapse = ""))
         previousPercentage <- completedPercentage
       }
     }
@@ -114,13 +111,9 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
   beta <- unlist(lapply(fittedFMMPerComponent, getBeta))
   omega <- unlist(lapply(fittedFMMPerComponent, getOmega))
 
-  # A and M estimates are recalculated by linear regression
-  cos.phi <- list()
-  for(j in 1:nback)
-    cos.phi[[j]] <- cos(beta[j] + 2*atan(omega[j]*tan((timePoints - alpha[j])/2)))
-
-  designMatrix <- matrix(unlist(cos.phi), ncol = nback)
-  linearModel <- lm(vData ~ designMatrix)
+  # A and M estimates are recalculated by linear regression; cosPhi is the design matrix
+  cosPhi <- calculateCosPhi(alpha=alpha, beta=beta, omega=omega, timePoints=timePoints)
+  linearModel <- lm(vData ~ cosPhi)
   M <- linearModel$coefficients[1]
   A <- linearModel$coefficients[-1]
   fittedFMMvalues <- predict(linearModel)

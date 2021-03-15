@@ -93,9 +93,9 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   names(parFinal) <- step1OutputNames[-6]
 
   # Returns an object of class FMM.
-  adjMob <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] +
+  fittedFMMvalues <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] +
         2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
-  SSE <- sum((adjMob-vData)^2)
+  SSE <- sum((fittedFMMvalues-vData)^2)
 
 
   outMobius <- FMM(
@@ -106,9 +106,9 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
     omega = parFinal[5],
     timePoints = timePoints,
     summarizedData = vData,
-    fittedValues = adjMob,
+    fittedValues = fittedFMMvalues,
     SSE = SSE,
-    R2 = PV(vData, adjMob)
+    R2 = PV(vData, fittedFMMvalues)
   )
   return(outMobius)
 }
