@@ -103,9 +103,6 @@ An S4 object of class \code{'FMM'} with information about the fitted model. The 
     \item{@R2}{
         A numeric vector specifying the explained variance by each of the fitted FMM components.
     	}
-    \item{@nIter}{
-        A numeric value specifying the number of iterations of the fitting algorithm.
-    	}
 }
 
 \references{
@@ -116,14 +113,14 @@ Rueda C, Larriba Y, Peddada SD (2019).
 
 \examples{
 # A monocomponent FMM model is fitted.
-FMM_data <- generateFMM(2,3,1.5,2.3,0.1,
+FMM_data <- generate_FMM(2,3,1.5,2.3,0.1,
                          from = 0, to = 2*pi, length.out = 100,
                          outvalues = TRUE,sigmaNoise = 0.3, plot=FALSE)
-fit <- fitFMM(FMM_data$y, lengthAlphaGrid=10,lengthOmegaGrid=10)
+fit <- fitFMM(FMM_data$y, lengthAlphaGrid=24,lengthOmegaGrid=14)
 summary(fit)
 
 # To see the differences between number of repetitions.
-FMM_data <- generateFMM(2,1,1.5,1.1,0.14,outvalues = TRUE, sigmaNoise = 0.15, plot=TRUE)
+FMM_data <- generate_FMM(2,1,1.5,1.1,0.14,outvalues = TRUE, sigmaNoise = 0.15, plot=TRUE)
 fit1 <- fitFMM(FMM_data$y,lengthAlphaGrid=6,lengthOmegaGrid=3,numReps=1)
 fit2 <- fitFMM(FMM_data$y,lengthAlphaGrid=6,lengthOmegaGrid=3,numReps=6,
                showProgress = FALSE)  # suppress progress messages
@@ -131,17 +128,15 @@ getSSE(fit1)
 getSSE(fit2)
 
 # Finer resolution grid.
-fit3 <- fitFMM(FMM_data$y,lengthAlphaGrid=10,lengthOmegaGrid=5,numReps=1)
+fit3 <- fitFMM(FMM_data$y,lengthAlphaGrid=15,lengthOmegaGrid=8,numReps=1)
 getSSE(fit3)
 
-# Two component FMM model with beta and omega restricted
-restFMM2w_data <- generateFMM(M = 3, A = c(7,4),
-                              alpha = c(0.5,5), beta = c(rep(3, 2)), omega = rep(0.05, 2),
+# Two component FMM model with beta restricted
+restFMM2w_data <- generate_FMM(M = 3, A = c(7,4), a = c(0.5,5), b = c(rep(3, 2)), w = rep(0.05, 2),
                               from = 0, to = 2*pi, length.out = 100,
                               sigmaNoise = 0.3, plot = FALSE)
 fit2w.rest <- fitFMM(restFMM2w_data$y, nback = 2, maxiter = 1, numReps = 1,
-                     lengthAlphaGrid = 15,lengthOmegaGrid = 10,
-                     betaRestrictions = c(1,1), omegaRestrictions=c(1,1))
+                     betaRestrictions = c(1,1))
 plotFMM(fit2w.rest, components = TRUE)
 
 }

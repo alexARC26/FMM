@@ -12,7 +12,6 @@
 \alias{getOmega}
 \alias{getSSE}
 \alias{getR2}
-\alias{getNIter}
 
 \title{General S4 Class Extractor Functions}
 
@@ -38,7 +37,6 @@
     \code{getOmega} \tab Extracts the omega slot from a S4 object of class \code{'FMM'}, \cr
     \code{getSSE} \tab Extracts the SSE slot from a S4 object of class \code{'FMM'}, \cr
     \code{getR2} \tab Extracts the R2 slot from a S4 object of class \code{'FMM'}, \cr
-    \code{getNIter} \tab Extracts the nIter slot from a S4 object of class \code{'FMM'}, \cr
     }
 
 }
