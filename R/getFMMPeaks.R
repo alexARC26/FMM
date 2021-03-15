@@ -8,7 +8,7 @@
 #####################################################
 ##### Function to  #####
 ## Input argument: FMM object
-FMMPeaks <- function(objFMM, timePointsIn2pi = TRUE) {
+getFMMPeaks <- function(objFMM, timePointsIn2pi = TRUE) {
 
   M <- getM(objFMM)
   A <- getA(objFMM)

@@ -159,6 +159,8 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
 
     }
 
+    nIter <- i
+
     # alpha, beta y omega estimates
     alpha <- rep(0,nback)
     beta <- rep(0,nback)
@@ -235,7 +237,8 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
       summarizedData = vData,
       fittedValues = adjMob,
       SSE = SSE,
-      R2 = PVj(vData, timePoints, alpha, beta, omega)
+      R2 = PVj(vData, timePoints, alpha, beta, omega),
+      nIter = nIter
     )
 
     return(outMobius)
@@ -281,6 +284,8 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
 
   names(A) <- paste("A",1:length(A),sep="")
 
+  nIter <- getNIter(outMobius)
+
   # Returns an object of class FMM
   outMobiusFinal <- FMM(
     M = M,
@@ -292,7 +297,8 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     summarizedData = vData,
     fittedValues= adjMob,
     SSE = SSE,
-    R2 = PVj(vData, timePoints, alpha, beta, omega)
+    R2 = PVj(vData, timePoints, alpha, beta, omega),
+    nIter = nIter
   )
 
   return(outMobiusFinal)
@@ -392,7 +398,8 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
       summarizedData = vData,
       fittedValues = rep(0,length(vData)),
       SSE = sum(vData^2),
-      R2 = PV(vData, rep(0,length(vData)))
+      R2 = PV(vData, rep(0,length(vData))),
+      nIter = 0
     )
 
     return(outMobius)
@@ -470,7 +477,8 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
     summarizedData = vData,
     fittedValues = adjMob,
     SSE = SSE,
-    R2 = 0
+    R2 = 0,
+    nIter = 0
   )
 
   return(outMobius)
@@ -668,6 +676,7 @@ fitFMM_restr_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
 
 
   }
+  nIter <- i
 
   # showProgress
   if(showProgress){
@@ -683,11 +692,20 @@ fitFMM_restr_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
         porcentajeAntes <- porcentajeCompletado
       }
     }
+
     cat("|\n")
-    if(i == maxiter){
-      cat("Stopped by reaching maximum iterations\n")
+    if(nIter == maxiter){
+      if(nIter == 1){
+        cat("Stopped by reaching maximum iterations (",nIter ,"iteration )","\n")
+      } else {
+        cat("Stopped by reaching maximum iterations (",nIter ,"iterations )","\n")
+      }
     } else {
-      cat("Stopped by the stopFunction\n")
+      if(nIter == 1){
+        cat("Stopped by the stopFunction (",nIter ,"iteration )","\n")
+      } else {
+        cat("Stopped by the stopFunction (",nIter ,"iterations )","\n")
+      }
     }
   }
 
@@ -750,7 +768,8 @@ fitFMM_restr_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
     summarizedData = vData,
     fittedValues = adjMob,
     SSE = SSE,
-    R2 = PVj(vData, timePoints, alpha, beta, omega)
+    R2 = PVj(vData, timePoints, alpha, beta, omega),
+    nIter = nIter
   )
 
   return(outMobius)
@@ -896,6 +915,7 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
     ajusteBloqueAnt <- ajusteBloque
 
   }
+  nIter <- i
 
   # showProgress
   if(showProgress){
@@ -913,9 +933,17 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
     }
     cat("|\n")
     if(i == maxiter){
-      cat("Stopped by reaching maximum iterations\n")
+      if(i == 1){
+        cat("Stopped by reaching maximum iterations (",i ,"iteration )","\n")
+      } else {
+        cat("Stopped by reaching maximum iterations (",i ,"iterations )","\n")
+      }
     } else {
-      cat("Stopped by the stopFunction\n")
+      if(i == 1){
+        cat("Stopped by the stopFunction (",i ,"iteration )","\n")
+      } else {
+        cat("Stopped by the stopFunction (",i ,"iterations )","\n")
+      }
     }
   }
 
@@ -972,7 +1000,8 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
     summarizedData = vData,
     fittedValues = adjMob,
     SSE = SSE,
-    R2 = PVj(vData, timePoints, alpha, beta, omega)
+    R2 = PVj(vData, timePoints, alpha, beta, omega),
+    nIter = nIter
   )
 
   return(outMobius)
