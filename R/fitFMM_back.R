@@ -121,8 +121,6 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
   # Residual sum of squares
   SSE <- sum((fittedFMMvalues - vData)^2)
 
-  names(A) <- paste("A", 1:length(A), sep = "")
-
   # Returns an object of class FMM.
   outMobius <- FMM(
     M = M,
