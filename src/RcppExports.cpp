@@ -19,9 +19,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// step1FMMrcpp2
+Rcpp::NumericVector step1FMMrcpp2(const arma::colvec& alphaOmegaParameters, const arma::colvec& vData, const arma::colvec& timePoints);
+RcppExport SEXP _FMM_step1FMMrcpp2(SEXP alphaOmegaParametersSEXP, SEXP vDataSEXP, SEXP timePointsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::colvec& >::type alphaOmegaParameters(alphaOmegaParametersSEXP);
+    Rcpp::traits::input_parameter< const arma::colvec& >::type vData(vDataSEXP);
+    Rcpp::traits::input_parameter< const arma::colvec& >::type timePoints(timePointsSEXP);
+    rcpp_result_gen = Rcpp::wrap(step1FMMrcpp2(alphaOmegaParameters, vData, timePoints));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_FMM_step1FMMrcpp", (DL_FUNC) &_FMM_step1FMMrcpp, 3},
+    {"_FMM_step1FMMrcpp2", (DL_FUNC) &_FMM_step1FMMrcpp2, 3},
     {NULL, NULL, 0}
 };
 

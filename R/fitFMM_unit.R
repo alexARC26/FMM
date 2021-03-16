@@ -16,7 +16,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
                       omegaMax = 1,
                       omegaGrid = exp(seq(log(0.0001), log(omegaMax),
                                           length.out = lengthOmegaGrid)),
-                      numReps = 3, parallelCluster = NULL, useRcpp = FALSE){
+                      numReps = 3, usedApply){
 
   n <- length(vData)
   grid <- expand.grid(alphaGrid,omegaGrid)
@@ -26,15 +26,8 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   # omega are initially fixed and cosinor model is used to calculate the rest of the parameters.
   # step1FMM function is used to make this estimate.
   # For faster estimates, parallelized and rcpp implementations are available
-  usedFunction <- ifelse(useRcpp, step1FMMrcpp, step1FMM)
-
-  if(!is.null(parallelCluster)){
-    step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = usedFunction,
-                        vData = vData, timePoints = timePoints))
-  }else{
-    step1 <- t(apply(grid, 1, FUN = usedFunction, vData = vData,
-                     timePoints = timePoints))
-  }
+  step1 <- usedApply(FUN = step1FMM, X = grid, vData = vData,
+                     timePoints = timePoints)
   colnames(step1) <- step1OutputNames
 
   # We find the optimal initial parameters,
@@ -72,13 +65,8 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
     grid <- as.matrix(expand.grid(alphaGrid,omegaGrid))
 
     # Step 1: initial parameters
-    if(!is.null(parallelCluster)){
-      step1 <- t(parApply(parallelCluster, X = grid, 1, FUN = step1FMM,
-                          vData = vData, timePoints = timePoints))
-    }else{
-      step1 <- t(apply(grid, 1, FUN = usedFunction, vData = vData,
-                       timePoints = timePoints))
-    }
+    step1 <- usedApply(FUN = step1FMM, X = grid, vData = vData,
+                       timePoints = timePoints)
     colnames(step1) <- step1OutputNames
     prevBestPar <- bestPar
     bestPar <- bestStep1(vData,step1)
@@ -105,25 +93,25 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   names(parFinal) <- step1OutputNames[-6]
 
   # Returns an object of class FMM.
-  adjMob <- parFinal["M"] + parFinal["A"]*
-    cos(parFinal["beta"] +
+  fittedFMMvalues <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] +
         2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
-  SSE <- sum((adjMob-vData)^2)
-
+  SSE <- sum((fittedFMMvalues-vData)^2)
 
 
   outMobius <- FMM(
-    M = parFinal["M"],
-    A = parFinal["A"],
-    alpha = parFinal[3],
-    beta = parFinal[4],
-    omega = parFinal[5],
+    M = parFinal[["M"]],
+    A = parFinal[["A"]],
+    alpha = parFinal[[3]],
+    beta = parFinal[[4]],
+    omega = parFinal[[5]],
     timePoints = timePoints,
     summarizedData = vData,
-    fittedValues = adjMob,
+    fittedValues = fittedFMMvalues,
     SSE = SSE,
-    R2 = PV(vData, adjMob)
+    R2 = PV(vData, fittedFMMvalues),
+    nIter = 0
   )
+
   return(outMobius)
 }
 

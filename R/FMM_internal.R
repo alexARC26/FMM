@@ -301,35 +301,61 @@ angularmean <- function(angles){
   return(a.mean)
 }
 
+replicateGrid <- function(grid, nback){
+  return(replicate(n = nback, grid, simplify = FALSE))
+}
+
+calculateCosPhi <- function(alpha, beta, omega, timePoints){
+  calculateSingleCosPhi <- function(alpha, beta, omega){
+    return(cos(beta + 2*atan(omega*tan((timePoints - alpha)/2))))
+  }
+
+  return(mapply(FUN=calculateSingleCosPhi, alpha=alpha, beta=beta, omega=omega))
+}
+
 ################################################################################
 # Internal function: return parallelized apply function depending on the OS.
 # Returns function to be used.
 ################################################################################
-getParallelizedApply <- function(){
+getApply <- function(parallelize = FALSE){
+
+  getApply_Rbase <- function(){
+    usedApply <- function(FUN, X, ...) t(apply(X = X, 1, FUN = FUN, ...))
+  }
 
   getParallelApply_Windows <- function(parallelCluster){
-    parallelizedApply <- function(FUN, x, ...) t(parallel::parApply(parallelCluster, FUN = FUN, x = x, ...))
-    return(parallelizedApply)
+    usedApply <- function(FUN, X, ...) t(parallel::parApply(parallelCluster, FUN = FUN,
+                                                            X = X, MARGIN = 1, ...))
+    return(usedApply)
   }
 
   parallelFunction_Unix<-function(nCores){
-    # A paralellized apply function does not exist, so it must be translated to a lapply
-    parallelizedApply <- function(FUN, x, ...){
-      matrix(unlist(parallel::mclapply(X = asplit(x, 1), FUN = FUN, ...)),
-             nrow = nrow(x), byrow = T)
+    # A parallelized apply function does not exist, so it must be translated to a lapply
+    usedApply <- function(FUN, X, ...){
+      matrix(unlist(parallel::mclapply(X = asplit(X, 1), FUN = FUN, ...)),
+             nrow = nrow(X), byrow = T)
     }
-    return(parallelizedApply)
+    return(usedApply)
   }
 
   nCores <- parallel::detectCores() - 1
 
-  if(.Platform$OS.type == "windows"){
-    parallelCluster <- parallel::makePSOCKcluster(nCores)
-    parallelApply <- getParallelApply_Windows(parallelCluster)
+  if(parallelize){
+    # different ways to implement parallelization depending on OS:
+    if(.Platform$OS.type == "windows"){
+      parallelCluster <- parallel::makePSOCKcluster(nCores)
+      doParallel::registerDoParallel(parallelCluster)
+      usedApply <- getParallelApply_Windows(parallelCluster)
+    }else{
+      usedApply <- parallelFunction_Unix(nCores)
+      parallelCluster <- NULL
+    }
   }else{
-    parallelApply <- parallelFunction_Unix(nCores)
+    # R base apply:
+    usedApply <- getApply_Rbase()
+    parallelCluster <- NULL
   }
 
-  return(parallelApply)
+  return(list(usedApply, parallelCluster))
 }
 
