@@ -114,8 +114,8 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
   # A and M estimates are recalculated by linear regression; cosPhi is the design matrix
   cosPhi <- calculateCosPhi(alpha=alpha, beta=beta, omega=omega, timePoints=timePoints)
   linearModel <- lm(vData ~ cosPhi)
-  M <- linearModel$coefficients[1]
-  A <- linearModel$coefficients[-1]
+  M <- as.vector(linearModel$coefficients[1])
+  A <- as.vector(linearModel$coefficients[-1])
   fittedFMMvalues <- predict(linearModel)
 
   # Residual sum of squares
