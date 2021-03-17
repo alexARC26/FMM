@@ -329,27 +329,27 @@ getApply <- function(parallelize = FALSE){
     return(usedApply)
   }
 
-  parallelFunction_Unix<-function(nCores){
+  #parallelFunction_Unix<-function(nCores){
     # A parallelized apply function does not exist, so it must be translated to a lapply
-    usedApply <- function(FUN, X, ...){
-      matrix(unlist(parallel::mclapply(X = asplit(X, 1), FUN = FUN, mc.cores = nCores, ...)),
-             nrow = nrow(X), byrow = T)
-    }
-    return(usedApply)
-  }
+  #  usedApply <- function(FUN, X, ...){
+  #    matrix(unlist(parallel::mclapply(X = asplit(X, 1), FUN = FUN, mc.cores = nCores, ...)),
+  #           nrow = nrow(X), byrow = T)
+  #  }
+  #  return(usedApply)
+  #}
 
   nCores <- parallel::detectCores() - 1
 
   if(parallelize){
     # different ways to implement parallelization depending on OS:
-    if(.Platform$OS.type == "windows"){
+    #if(.Platform$OS.type == "windows"){
       parallelCluster <- parallel::makePSOCKcluster(nCores)
       doParallel::registerDoParallel(parallelCluster)
       usedApply <- getParallelApply_Windows(parallelCluster)
-    }else{
-      usedApply <- parallelFunction_Unix(nCores)
-      parallelCluster <- NULL
-    }
+    #}else{
+    #  usedApply <- parallelFunction_Unix(nCores)
+    #  parallelCluster <- NULL
+    #}
   }else{
     # R base apply:
     usedApply <- getApply_Rbase()
