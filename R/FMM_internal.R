@@ -332,7 +332,7 @@ getApply <- function(parallelize = FALSE){
   parallelFunction_Unix<-function(nCores){
     # A parallelized apply function does not exist, so it must be translated to a lapply
     usedApply <- function(FUN, X, ...){
-      matrix(unlist(parallel::mclapply(X = asplit(X, 1), FUN = FUN, ...)),
+      matrix(unlist(parallel::mclapply(X = asplit(X, 1), FUN = FUN, mc.cores = nCores, ...)),
              nrow = nrow(X), byrow = T)
     }
     return(usedApply)
