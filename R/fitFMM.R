@@ -112,7 +112,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   cluster <- usedApply_Cluster[[2]]
   if(!is.null(cluster)) parallel::stopCluster(cluster)
 
-  if(showTime & showProgress){
+  if(showTime){
     time.end <- Sys.time()
     print(time.end-time.ini)
   }
