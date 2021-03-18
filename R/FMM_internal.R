@@ -30,19 +30,11 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
 
   mobiusTerm <- 2*atan(omegaParameter*tan((timePoints - alphaParameter)/2))
   tStar <- alphaParameter + mobiusTerm
-
-  # Given alpha and omega, a cosinor model is computed with t* in
-  # order to obtain delta (cosCoeff) and gamma (sinCoeff).
-  # Linear Model exact expressions are used to improve performance.
-  costStar <- cos(tStar)
-  sentstar <- sin(tStar)
-  covMatrix <- stats::cov(cbind(vData, costStar, sentstar))
-  denominator <- covMatrix[2,2]*covMatrix[3,3] - covMatrix[2,3]^2
-  cosCoeff <- (covMatrix[1,2]*covMatrix[3,3] -
-                 covMatrix[1,3]*covMatrix[2,3])/denominator
-  sinCoeff <- (covMatrix[1,3]*covMatrix[2,2] -
-                 covMatrix[1,2]*covMatrix[2,3])/denominator
-  mParameter <- mean(vData) - cosCoeff*mean(costStar) - sinCoeff*mean(sentstar)
+  cosinorModel <- stats::.lm.fit(cbind(rep.int(1, length(vData)),
+                                       cos(tStar), sin(tStar)), vData)
+  cosCoeff <- cosinorModel$coefficients[2]
+  sinCoeff <- cosinorModel$coefficients[3]
+  mParameter <- cosinorModel$coefficients[1]
 
   phiEst <- atan2(-sinCoeff, cosCoeff)   # acrophase (phi)
   aParameter <- sqrt(cosCoeff^2 + sinCoeff^2)
