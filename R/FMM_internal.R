@@ -139,7 +139,7 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
   if(rest1 & rest2 & rest3 & rest4)
     return(residualSS)
   else
-    return(10^10)
+    return(10^100)
 }
 
 ################################################################################
@@ -320,7 +320,7 @@ calculateCosPhi <- function(alpha, beta, omega, timePoints){
 getApply <- function(parallelize = FALSE){
 
   getApply_Rbase <- function(){
-    usedApply <- function(FUN, X, ...) t(apply(X = X, 1, FUN = FUN, ...))
+    usedApply <- function(FUN, X, ...) t(apply(X = X, MARGIN = 1, FUN = FUN, ...))
   }
 
   getParallelApply_Windows <- function(parallelCluster){
