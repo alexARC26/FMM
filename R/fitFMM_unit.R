@@ -14,7 +14,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                       alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
                       omegaMax = 1,
-                      omegaGrid = exp(seq(log(0.0001), log(omegaMax),
+                      omegaGrid = exp(seq(log(0.001), log(omegaMax),
                                           length.out = lengthOmegaGrid)),
                       numReps = 3, usedApply){
 
@@ -59,7 +59,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
     # new grid for omega between 0 and omegaMax
     nOmegaGrid <- length(omegaGrid)
     amplitudeOmegaGrid <- 1.5*mean(diff(omegaGrid))
-    omegaGrid <- seq(max(parFinal[5] - amplitudeOmegaGrid, 0),
+    omegaGrid <- seq(max(parFinal[5] - amplitudeOmegaGrid, 0.001),
                      min(omegaMax,parFinal[5] + amplitudeOmegaGrid),
                      length.out = nOmegaGrid)
     grid <- as.matrix(expand.grid(alphaGrid,omegaGrid))
