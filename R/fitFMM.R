@@ -43,7 +43,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
 
   alphaGrid <- seq(0,2*pi,length.out = lengthAlphaGrid)
   omegaMax <- 1
-  omegaGrid <- exp(seq(log(0.0001),log(omegaMax),length.out = lengthOmegaGrid))
+  omegaGrid <- exp(seq(log(0.001),log(omegaMax),length.out = lengthOmegaGrid))
   staticComponents <- NULL
   objectFMM <- NULL
 
