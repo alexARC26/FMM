@@ -5,10 +5,16 @@
 #' separately. Optionally \code{'ggplot2'} can be used as graphic library.
 #'
 #' @param objFMM Object of class FMM
-#' @param components TRUE to plot each component separately
-#' @param plotAlongPeriods: TRUE to plot more than 1 period.
-#' @param use_ggplot2: TRUE to use ggplot2 package.
-#' @param legendInComponentsPlot TRUE to indicate if the a legend should be plotted in the component plot. textExtra: Extra text to be added to the titles of the plot.
+#' @param components A logical value indicating if the centered wave components of the model should be separately
+#' plotted (case where it is \code{TRUE}). If \code{FALSE}, the default, the fitted FMM model
+#' along with the observed data is plotted.
+#' @param plotAlongPeriods: A logical value indicating if more than one period should be plotted in the plots
+#' by default. Its default value is \code{FALSE}.
+#' @param use_ggplot2: A logical value. If \code{FALSE}, the default, R base graphics are used. If \code{TRUE},
+#' \code{'ggplot2'} library is used as graphics engine.
+#' @param legendInComponentsPlot A logical value indicating whether the legend should be plotted in the components
+#' plot. By defaults it is \code{TRUE}.
+#' @param textExtra: A character vector for extra text to be added to the titles of the plots.
 #'
 #' @details \code{plotFMM()} can generate two types of plots: the basic plot compares the fitted model against the original data while the components plot represents separately the centered waves of the model (if the argument components is TRUE).
 #'
