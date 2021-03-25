@@ -338,7 +338,7 @@ getApply <- function(parallelize = FALSE){
     return(usedApply)
   }
 
-  nCores <- parallel::detectCores() - 1
+  nCores <- min(12, parallel::detectCores() - 1)
 
   if(parallelize){
     # different ways to implement parallelization depending on OS:
