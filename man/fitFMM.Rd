@@ -118,7 +118,6 @@ fit2w.rest <- fitFMM(restFMM2w_data$y, nback = 2, maxiter = 1, numReps = 1,
                      betaRestrictions = c(1, 1), omegaRestrictions=c(1, 1))
 plotFMM(fit2w.rest, components = TRUE)
 
-
 }
 \references{
 Rueda C, Larriba Y, Peddada SD (2019). Frequency Modulated Moebius Model Accurately Predicts Rhythmic Signals in Biological and Physical Sciences.
