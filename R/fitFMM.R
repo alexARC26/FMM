@@ -115,8 +115,9 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                    parallelize = FALSE){
 
   alphaGrid <- seq(0,2*pi,length.out = lengthAlphaGrid)
+  omegaMin <- 0.001
   omegaMax <- 1
-  omegaGrid <- exp(seq(log(0.001),log(omegaMax),length.out = lengthOmegaGrid))
+  omegaGrid <- exp(seq(log(omegaMin),log(omegaMax),length.out = lengthOmegaGrid))
   staticComponents <- NULL
   objectFMM <- NULL
 
@@ -155,14 +156,14 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   if(nback == 1){
     fittedFMM <- fitFMM_unit(vData = summarizedData, timePoints = timePoints,
                        lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
-                       alphaGrid = alphaGrid, omegaMax = omegaMax, omegaGrid = omegaGrid,
-                       numReps = numReps, usedApply = usedApply)
+                       alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
+                       omegaGrid = omegaGrid, numReps = numReps, usedApply = usedApply)
 
   } else {
     if(length(unique(betaRestrictions)) == nback &
        length(unique(omegaRestrictions)) == nback){
-      fittedFMM <- fitFMM_back(summarizedData,timePoints, nback, maxiter,stopFunction,
-                         lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax,
+      fittedFMM <- fitFMM_back(summarizedData, nback, timePoints, maxiter, stopFunction,
+                         lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMin, omegaMax,
                          omegaGrid, numReps, showProgress, usedApply = usedApply)
     } else {
       if(length(unique(omegaRestrictions)) == nback &
@@ -170,14 +171,13 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
         fittedFMM <- fitFMM_restr_beta(summarizedData, timePoints, nback,
                                  betaRestrictions, maxiter, stopFunction,
                                  objectFMM, staticComponents, lengthAlphaGrid,
-                                 lengthOmegaGrid, alphaGrid, omegaMax,omegaGrid,
-                                 numReps, showProgress)
+                                 lengthOmegaGrid, alphaGrid, omegaMax,
+                                 omegaGrid, numReps, showProgress)
       } else {
         fittedFMM <- fitFMM_restr_omega_beta(vData,timePoints, nback,betaRestrictions,
                                        omegaRestrictions, maxiter, stopFunction,
-                                       lengthAlphaGrid, lengthOmegaGrid,
-                                       alphaGrid, omegaMax, omegaGrid,numReps,
-                                       showProgress)
+                                       lengthAlphaGrid, lengthOmegaGrid, alphaGrid,
+                                       omegaMax, omegaGrid, numReps, showProgress)
       }
     }
   }

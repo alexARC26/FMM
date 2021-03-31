@@ -14,7 +14,7 @@
 #   showProgress: TRUE to display a progress indicator on the console.
 # Returns an object of class FMM.
 ###############################################################
-fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
+fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
                       maxiter = nback, stopFunction = alwaysFalse,
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                       alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
@@ -55,8 +55,8 @@ fitFMM_back<-function(vData, timePoints = seqTimes(length(vData)), nback,
 
       # component j fitting using fitFMM_unit function
       fittedFMMPerComponent[[j]] <- fitFMM_unit(backFittingData, timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
-                                            lengthOmegaGrid = lengthOmegaGrid, alphaGrid = alphaGrid[[j]], omegaMax = omegaMax,
-                                            omegaGrid = omegaGrid[[j]], numReps = numReps, usedApply)
+                                            lengthOmegaGrid = lengthOmegaGrid, alphaGrid = alphaGrid[[j]], omegaMin = omegaMin,
+                                            omegaMax = omegaMax, omegaGrid = omegaGrid[[j]], numReps = numReps, usedApply)
       fittedValuesPerComponent[,j] <- fittedFMMPerComponent[[j]]@fittedValues
       # showProgress
       if(showProgress){
