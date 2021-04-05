@@ -34,24 +34,26 @@ in which case they are equally spaced in range \eqn{[0, 2\pi]}. It must be betwe
 \item{betaRestrictions}{An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{beta} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{beta1=beta2=beta3} and
 \code{beta4=beta5}. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on \code{beta} parameters.}
 
+\item{omegaRestrictions}{An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{omega} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{omega1=omega2=omega3} and
+\code{omega4=omega5}. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on \code{omega} parameters.}
+
 \item{maxiter}{Maximum number of iterations for the backfitting algorithm. By default, it is set at \code{nback}.}
 
 \item{stopFunction}{Function to check the convergence criterion for the backfitting algorithm (see Details).}
 
 \item{lengthAlphaGrid}{Precision of the grid of alpha in the search of the best model. If it is increased, more possible values of alpha will be considered, resulting in an increasing in the computation time too.
-By default, it is established at 48 possible values of alpha, equally spaced between 0 and \eqn{2\pi}.}
+By default, it is set to 48 possible values of alpha, equally spaced between 0 and \eqn{2\pi}.}
 
 \item{lengthOmegaGrid}{Precision of the grid of omega in the search of the best model. If it is increased, more possible values of omega will be considered, resulting in an increasing in the computation time too.
-By default it is established at 24 possible values of omega, equally spaced between 0 and 1 in a logarithmic way.}
+By default it is set to 24 possible values of omega, equally spaced between 0 and 1 in a logarithmic way.}
+
+\item{numReps}{Number of times (alpha, omega) parameters are refined.}
 
 \item{showProgress}{\code{TRUE} to display a progress indicator on the console.}
 
 \item{showTime}{\code{TRUE} to display execution time on the console.}
 
-\item{parallelize}{\code{TRUE} to use parallelized procedure to fit restricted FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to the number of cores of the machine - 1.}
-
-\item{omegaRestriction}{An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{omega} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{omega1=omega2=omega3} and
-\code{omega4=omega5}. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on \code{omega} parameters.}
+\item{parallelize}{\code{TRUE} to use parallelized procedure to fit restricted FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to 12, or if the machine has less, the number of cores - 1.}
 }
 \value{
 An S4 object of class \code{'FMM'} with information about the fitted model. The object contains the following slots:
@@ -73,14 +75,14 @@ An S4 object of class \code{'FMM'} with information about the fitted model. The 
 }
 \description{
 \code{fitFMM()} is used to fit FMM models. The only required argument to fit FMM models is the input data.
-By default it is assumed that time points, corresponding to a single time period, are equally spaced from 0 to 2*pi.
+By default it is assumed that time points, corresponding to a single time period, are equally spaced from 0 to \eqn{2\pi}.
 }
 \details{
 Data will be collected over \code{nPeriods} periods. When \code{nPeriods > 1} the fitting is carried out by averaging the data collected
 at each time point across all considered periods. The model is fitting to summarized data.
 \code{timePoints} is a \code{n}-length numeric vector where \code{n} is the number of different time points per period.
 
-Two functions are allowed as \code{stopFunction} argument:
+The \code{stopFunction} argument can either be the functions \code{alwaysFalse} or \code{R2} included in the package or user-defined functions that have the same arguments. The included functions serve for the following:
 \itemize{
   \item{\code{alwaysFalse()}, its default value, which returns \code{FALSE} to force \code{maxiter} iterations; and}
   \item{\code{R2(vData,pred,prevPred,difMax = 0.001)}, a function that computes the difference between the explained variability in two consecutive iterations returning \code{TRUE} when the convergence criterion is reached.

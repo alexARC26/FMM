@@ -1,10 +1,10 @@
-#' Individual contribution to the fitted values of each FMM wav
+#' Individual contribution to the fitted values of each FMM wave
 #'
 #'
 #' \code{extractWaves} extracts individual contribution to the fitted values of each FMM wave.
 #'
 #'
-#' @param objFMM Object of class \code{'FMM'}
+#' @param objFMM Object of class \code{'FMM'}.
 #'
 #'
 #' @return

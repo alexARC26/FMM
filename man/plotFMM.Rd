@@ -20,16 +20,16 @@ plotFMM(
 plotted (case where it is \code{TRUE}). If \code{FALSE}, the default, the fitted FMM model
 along with the observed data is plotted.}
 
+\item{plotAlongPeriods}{A logical value indicating if more than one period should be plotted in the plots
+by default. Its default value is \code{FALSE}.}
+
+\item{use_ggplot2}{A logical value. If \code{FALSE}, the default, R base graphics are used. If \code{TRUE},
+\code{'ggplot2'} library is used as graphics engine.}
+
 \item{legendInComponentsPlot}{A logical value indicating whether the legend should be plotted in the components
 plot. By defaults it is \code{TRUE}.}
 
-\item{plotAlongPeriods:}{A logical value indicating if more than one period should be plotted in the plots
-by default. Its default value is \code{FALSE}.}
-
-\item{use_ggplot2:}{A logical value. If \code{FALSE}, the default, R base graphics are used. If \code{TRUE},
-\code{'ggplot2'} library is used as graphics engine.}
-
-\item{textExtra:}{A character vector for extra text to be added to the titles of the plots.}
+\item{textExtra}{A character vector for extra text to be added to the titles of the plots.}
 }
 \value{
 None if base R graphics are used, a named \code{ggplot2} list if \code{'ggplot2'} is used.

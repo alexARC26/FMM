@@ -32,7 +32,7 @@ generateFMM(
 
 \item{from}{A numeric value which contains the initial time point of the simulated data. By default, it is 0.}
 
-\item{to}{A numeric value which contains the final time point of the simulated data. By default, it is 2*pi.}
+\item{to}{A numeric value which contains the final time point of the simulated data. By default, it is \eqn{2\pi}.}
 
 \item{length.out}{A non-negative number wich contains the desired length of the simulation. By default, it is 100.}
 

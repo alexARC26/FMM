@@ -1,11 +1,11 @@
 #' Peak and trough times and signal values
 #'
 #'
-#' \code{getFMMPeaks()} can be used to estimate interesting parameters of the FMM model specially useful in applications. The function estimates peak and trough times and signal values at those times for each component of the model.
+#' \code{getFMMPeaks()} is used to estimate peak and trough times and signal values at those times for each component of the model. These parameters result to be useful in multiple applications.
 #'
 #'
 #' @param objFMM Object of class \code{'FMM'}
-#' @param timePointsIn2pi \code{TRUE} to return peak and trough times in the [0,2*pi] interval. When \code{timePointsIn2pi = FALSE} the positions of peak and trough times are returned. Its default value is \code{TRUE}.
+#' @param timePointsIn2pi \code{TRUE} to return peak and trough times in the \eqn{[0, 2\pi]} interval. When \code{timePointsIn2pi = FALSE} the positions of peak and trough times are returned. Its default value is \code{TRUE}.
 #'
 #'
 #' @return

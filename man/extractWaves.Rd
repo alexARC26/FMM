@@ -2,12 +2,12 @@
 % Please edit documentation in R/extractWaves.R
 \name{extractWaves}
 \alias{extractWaves}
-\title{Individual contribution to the fitted values of each FMM wav}
+\title{Individual contribution to the fitted values of each FMM wave}
 \usage{
 extractWaves(objFMM)
 }
 \arguments{
-\item{objFMM}{Object of class \code{'FMM'}}
+\item{objFMM}{Object of class \code{'FMM'}.}
 }
 \value{
 Individual contribution to the fitted values of each FMM wave. It is a \code{list} object with as many elements as FMM components have been fitted.
