@@ -97,8 +97,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
         2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
   SSE <- sum((fittedFMMvalues-vData)^2)
 
-
-  outMobius <- FMM(
+  return(FMM(
     M = parFinal[["M"]],
     A = parFinal[["A"]],
     alpha = parFinal[[3]],
@@ -110,8 +109,6 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
     SSE = SSE,
     R2 = PV(vData, fittedFMMvalues),
     nIter = 0
-  )
-
-  return(outMobius)
+  ))
 }
 

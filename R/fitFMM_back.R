@@ -122,7 +122,7 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
   SSE <- sum((fittedFMMvalues - vData)^2)
 
   # Returns an object of class FMM.
-  outMobius <- FMM(
+  return(FMM(
     M = M,
     A = A,
     alpha = alpha,
@@ -134,6 +134,5 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
     SSE = SSE,
     R2 = PVj(vData, timePoints, alpha, beta, omega),
     nIter = nIter
-  )
-  return(outMobius)
+  ))
 }
