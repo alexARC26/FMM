@@ -208,6 +208,10 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   if(length(needFix)>0) {
     stop("Invalid solution: check function input parameters.")
   }
+
+  # "Hack" to add show method without hindering paralellized procedure
+  addShowMethod()
+
   return(fittedFMM)
 }
 
