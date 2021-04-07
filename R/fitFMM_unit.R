@@ -37,8 +37,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
 
   ## Step 2: BFGS optimization. 'step2FMM' function is used.
   BFGS <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-                      timePoints = timePoints, omegaMax = omegaMax,
-                      method = "BFGS")
+                timePoints = timePoints, omegaMax = omegaMax, method = "BFGS")
   parFinal <- BFGS$par
 
   # alpha and beta between 0 and 2pi
@@ -80,8 +79,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
 
     ## Step 2: BFGS optimization
     BFGS <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-                        timePoints = timePoints, omegaMax = omegaMax,
-                        method = "BFGS")
+                  timePoints = timePoints, omegaMax = omegaMax, method = "BFGS")
     parFinal <- BFGS$par
 
     # alpha and beta between 0 and 2pi
