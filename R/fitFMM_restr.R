@@ -38,7 +38,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
                       stopFunction = alwaysFalse, objectFMM = NULL, staticComponents = NULL,
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                       alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMax = 1,
-                      omegaGrid = exp(seq(log(0.0001),log(omegaMax),length.out=lengthOmegaGrid)),
+                      omegaGrid = exp(seq(log(0.001),log(omegaMax),length.out=lengthOmegaGrid)),
                       numReps = 3, parallelize = FALSE){
 
   n <- length(vData)
@@ -74,7 +74,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   doParallel::registerDoParallel(cl)
 
   # External loop on the omega grid, setting its value
-  objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter,by="row")) %dopar% {
+  objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
 
     omegas <- as.numeric(omegas)
 
@@ -377,7 +377,7 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
   # alpha and omega are fixed and cosinor model is used to calculate the rest of the parameters.
   # step1FMM function is used to make this estimate
   grid <- expand.grid(alphaGrid,omega)
-  step1 <- t(apply(grid,1,step1FMM, vData=vData, timePoints=timePoints))
+  step1 <- t(apply(grid, 1, step1FMM, vData=vData, timePoints=timePoints))
   colnames(step1) <- c("M","A","alpha","beta","omega","RSS")
 
   # We find the optimal initial parameters,
@@ -545,28 +545,18 @@ fitFMM_restr_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
                        betaRestrictions, maxiter=nback,
                        stopFunction = alwaysFalse, objectFMM = NULL, staticComponents = NULL,
                        lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                       alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMax = 1,
-                       omegaGrid = exp(seq(log(0.0001),log(omegaMax),length.out=lengthOmegaGrid)),
-                       numReps = 3, showProgress = TRUE){
-
+                       alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMin = 0.001, omegaMax = 1,
+                       omegaGrid = exp(seq(log(omegaMin),log(omegaMax),length.out=lengthOmegaGrid)),
+                       numReps = 3, showProgress = TRUE, usedApply = getApply(FALSE)[[1]]){
 
   n <- length(vData)
 
-  if(!is.list(alphaGrid)){
-    aux <- alphaGrid
-    alphaGrid <- list()
-    for(i in 1:nback){
-      alphaGrid[[i]] <- aux
-    }
-  }
+  if(!is.list(alphaGrid))
+    alphaGrid <- replicateGrid(grid = alphaGrid, nback = nback)
 
-  if(!is.list(omegaGrid)){
-    aux <- omegaGrid
-    omegaGrid <- list()
-    for(i in 1:nback){
-      omegaGrid[[i]] <- aux
-    }
-  }
+  if(!is.list(omegaGrid))
+    omegaGrid <- replicateGrid(grid = omegaGrid, nback = nback)
+
 
   if(showProgress){
     marcasTotales <- 50
@@ -583,57 +573,28 @@ fitFMM_restr_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
   predichosComponente <- list()
   ajusteComponente <- list()
 
-  # without previous objectFMM to refine
-  if(is.null(objectFMM)){
-    if(!(is.null(staticComponents))){
-      stop("Static components only supported through previous objFMM")
-    }
-    for(i in 1:nback){
-      predichosComponente[[i]] <- rep(0,n)
-    }
-    prevAdjMob <- NULL
-
-    # with previous objectFMM to refine
-  } else {
-    prevAdjMob <- getFittedValues(objectFMM)
-    nbackAnterior <- length(getAlpha(objectFMM))
-    if(nbackAnterior > nback){
-      stop("Impossible to reduce dimensions from input objectFMM")
-    }
-    for(i in 1:nback){
-      if(i <= nbackAnterior){
-        predichosComponente[[i]] <- getM(objectFMM)/nbackAnterior + getA(objectFMM)[i]*cos(getBeta(objectFMM)[i] +
-                                                                                             2*atan(getOmega(objectFMM)[i]*tan((timePoints-getAlpha(objectFMM)[i])/2)))
-      } else {
-        predichosComponente[[i]] <- rep(0,n)
-      }
-    }
+  for(i in 1:nback){
+    predichosComponente[[i]] <- rep(0,n)
   }
+  prevAdjMob <- NULL
 
 
   # Backfitting algorithm: iteration
   for(i in 1:maxiter){
-
     # Backfitting algorithm: component
     for(j in 1:nback){
-
-      if(is.null(objectFMM) | !(j %in% staticComponents)){
-
-        # data for component j: difference between vData and all other components fitted values
-        vDataAjuste <- vData
-        for(k in 1:nback){
-          if(j != k){
-            vDataAjuste <- vDataAjuste - predichosComponente[[k]]
-          }
+      # data for component j: difference between vData and all other components fitted values
+      vDataAjuste <- vData
+      for(k in 1:nback){
+        if(j != k){
+          vDataAjuste <- vDataAjuste - predichosComponente[[k]]
         }
-
-        # component j fitting using fitFMM_unit function
-        ajusteComponente[[j]] <- fitFMM_unit(vDataAjuste,timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
-                                             lengthOmegaGrid = lengthOmegaGrid, alphaGrid = alphaGrid[[j]], omegaMax = omegaMax,
-                                             omegaGrid = omegaGrid[[j]], numReps = numReps)
-        predichosComponente[[j]] <- getFittedValues(ajusteComponente[[j]])
-
       }
+      # component j fitting using fitFMM_unit function
+      ajusteComponente[[j]] <- fitFMM_unit(vDataAjuste, timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
+                                           lengthOmegaGrid = lengthOmegaGrid, alphaGrid = alphaGrid[[j]], omegaMin = omegaMin,
+                                           omegaMax = omegaMax, omegaGrid = omegaGrid[[j]], numReps = numReps, usedApply = usedApply)
+      predichosComponente[[j]] <- getFittedValues(ajusteComponente[[j]])
 
       # showProgress
       if(showProgress){
@@ -710,19 +671,13 @@ fitFMM_restr_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
   }
 
   # alpha, beta y omega estimates
-  alpha <- rep(0,nback)
-  beta <- rep(0,nback)
-  omega <- rep(0,nback)
+  alpha <- rep(0, nback)
+  beta <- rep(0, nback)
+  omega <- rep(0, nback)
   for(j in 1:nback){
-    if(j %in% staticComponents){
-      alpha[j] <-getAlpha(objectFMM)[j]
-      beta[j] <- getBeta(objectFMM)[j]
-      omega[j] <- getOmega(objectFMM)[j]
-    } else {
-      alpha[j] <- getAlpha(ajusteComponente[[j]])
-      beta[j] <- getBeta(ajusteComponente[[j]])
-      omega[j] <- getOmega(ajusteComponente[[j]])
-    }
+    alpha[j] <- getAlpha(ajusteComponente[[j]])
+    beta[j] <- getBeta(ajusteComponente[[j]])
+    omega[j] <- getOmega(ajusteComponente[[j]])
   }
 
   # beta restrictions: calculate angular mean of beta parameters
@@ -798,12 +753,11 @@ fitFMM_restr_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
 # Note2: a previous FMM object refine is not supported
 ###############################################################
 fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
-                            betaRestrictions, omegaRestrictions, maxiter=nback,
+                            betaRestrictions, omegaRestrictions, maxiter = nback,
                             stopFunction = alwaysFalse, lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                            alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMax = 1,
-                            omegaGrid = exp(seq(log(0.0001),log(omegaMax),length.out=lengthOmegaGrid)),
+                            alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMin = 0.001, omegaMax = 1,
+                            omegaGrid = exp(seq(log(omegaMin),log(omegaMax),length.out=lengthOmegaGrid)),
                             numReps = 3, showProgress = TRUE){
-
 
   n <- length(vData)
 
@@ -842,7 +796,7 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
   # Backfitting algorithm: iteration
   for(i in 1:maxiter){
 
-    indBloque <-1
+    indBloque <- 1
 
     # Backfitting algorithm: component for each omega block
     for(j in unique(omegaRestrictions)){
@@ -860,17 +814,18 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
         }
 
         if(numComponents > 1){
-          iteraciones <- min(numComponents+1,4)
+          iteraciones <- min(numComponents+1, 4)
         } else {
           iteraciones <- 1
         }
 
         # fitting of a block using fitFMM_restr function
         ajusteBloque[[indBloque]] <- fitFMM_restr(vDataAjuste, timePoints = timePoints, nback = numComponents,
-           betaRestrictions = betaRestrictions[componentes], omegaRestrictions = rep(1,numComponents), maxiter=iteraciones,
-           lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
-           alphaGrid = alphaGrid, omegaMax = omegaMax,
-           omegaGrid = omegaGrid, numReps = numReps, parallelize=FALSE)
+                                                  betaRestrictions = betaRestrictions[componentes],
+                                                  omegaRestrictions = rep(1,numComponents), maxiter=iteraciones,
+                                                  lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
+                                                  alphaGrid = alphaGrid, omegaMax = omegaMax, omegaGrid = omegaGrid,
+                                                  numReps = numReps, parallelize = FALSE)
 
         predichosBloque[[indBloque]] <- getFittedValues(ajusteBloque[[indBloque]])
 
@@ -1005,5 +960,4 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
   )
 
   return(outMobius)
-
 }

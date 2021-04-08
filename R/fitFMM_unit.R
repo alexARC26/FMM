@@ -19,7 +19,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
                       numReps = 3, usedApply = getApply(FALSE)[[1]]){
 
   n <- length(vData)
-  grid <- expand.grid(alphaGrid,omegaGrid)
+  grid <- expand.grid(alphaGrid, omegaGrid)
   step1OutputNames <- c("M","A","alpha","beta","omega","RSS")
 
   ## Step 1: initial values of M, A, alpha, beta and omega. Parameters alpha and
@@ -29,6 +29,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   step1 <- usedApply(FUN = step1FMM, X = grid, vData = vData,
                      timePoints = timePoints)
   colnames(step1) <- step1OutputNames
+
 
   # We find the optimal initial parameters,
   # minimizing Residual Sum of Squared with several stability conditions.
