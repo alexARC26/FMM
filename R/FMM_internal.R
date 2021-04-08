@@ -95,10 +95,14 @@ bestStep1 <- function(vData, step1){
 
     # it is necessary to check that there are no NA,
     # because it can be an extreme solution
-    if(is.na(rest1) | is.na(rest2))
-      i <- i+1
-    else
+    if(is.na(rest1)) rest1 <- FALSE
+    if(is.na(rest2)) rest2 <- FALSE
+
+    if(rest1 & rest2){
       bestModelFound <- TRUE
+    } else {
+      i <- i+1
+    }
 
     if(i > nrow(step1))
       return(NULL)
@@ -139,7 +143,7 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
   if(rest1 & rest2 & rest3 & rest4)
     return(residualSS)
   else
-    return(10^100)
+    return(Inf)
 }
 
 ################################################################################
