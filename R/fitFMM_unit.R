@@ -13,7 +13,7 @@
 fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                       alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
-                      omegaMin = 0.001, omegaMax = 1,
+                      omegaMin = 0.0001, omegaMax = 1,
                       omegaGrid = exp(seq(log(omegaMin), log(omegaMax),
                                           length.out = lengthOmegaGrid)),
                       numReps = 3, usedApply = getApply(FALSE)[[1]]){
