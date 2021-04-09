@@ -247,7 +247,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   uniqueOmegas <- unique(getOmega(outMobius))
   uniqueOmegasOptim <- optim(par = uniqueOmegas, fn = stepOmega, indOmegas = omegaRestrictions,
                              objFMM = outMobius, omegaMax = omegaMax,
-                             control=list(warn.1d.NelderMead = FALSE))$par
+                             control = list(warn.1d.NelderMead = FALSE))$par
   # warn.1d.NelderMead to suppress Nelder-Mead method warning when used for a single omega.
 
   # A and M estimates are recalculated by linear regression
@@ -354,17 +354,16 @@ stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
 # Returns an object of class FMM.
 ###############################################################
 fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
-                      lengthAlphaGrid = 48,
-                      alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid),
-                      numReps = 3){
+                            lengthAlphaGrid = 48, alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
+                            numReps = 3){
 
   n <- length(vData)
 
   ## Step 1: initial values of M, A, alpha, beta and omega
   # alpha and omega are fixed and cosinor model is used to calculate the rest of the parameters.
   # step1FMM function is used to make this estimate
-  grid <- expand.grid(alphaGrid,omega)
-  step1 <- t(apply(grid, 1, step1FMM, vData=vData, timePoints=timePoints))
+  grid <- expand.grid(alphaGrid, omega)
+  step1 <- t(apply(grid, 1, step1FMM, vData = vData, timePoints = timePoints))
   colnames(step1) <- c("M","A","alpha","beta","omega","RSS")
 
   # We find the optimal initial parameters,
@@ -388,17 +387,17 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
       R2 = PV(vData, rep(0,length(vData))),
       nIter = 0
     )
-
     return(outMobius)
   }
 
   ## Step 2: Nelder-Mead optimization. 'step2FMM_restr' function is used.
-  if(!is.infinite(step2FMM_restr(bestPar[1:4],vData = vData, timePoints = timePoints, omega = omega))){
+  if(!is.infinite(step2FMM_restr(bestPar[1:4], vData = vData, timePoints = timePoints, omega = omega))){
     nelderMead <- optim(par = bestPar[1:4], fn = step2FMM_restr, vData = vData, timePoints = timePoints, omega = omega)
-    parFinal <- c(nelderMead$par,omega)
+    parFinal <- c(nelderMead$par, omega)
   } else {
     parFinal <- c(bestPar[1:4],omega)
   }
+
   names(parFinal) <- c("M","A","alpha","beta","omega")
   adjMob <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] + 2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
   SSE <- sum((adjMob-vData)^2)
@@ -431,7 +430,6 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
       warning("FMM model may be no appropiate")
     }
 
-
     ## Step 2: Nelder-Mead optimization
     if(!is.infinite(step2FMM_restr(bestPar[1:4],vData = vData, timePoints = timePoints, omega = omega))){
       nelderMead <- optim(par = bestPar[1:4], fn = step2FMM_restr, vData = vData, timePoints = timePoints, omega = omega)
@@ -443,7 +441,6 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
     # alpha and beta between 0 and 2pi
     parFinal[3] <- parFinal[3]%%(2*pi)
     parFinal[4] <- parFinal[4]%%(2*pi)
-
 
     numReps <- numReps - 1
   }
@@ -480,32 +477,31 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
 #   timePoints: one single period time points.
 #   omega: fixed value of omega.
 ###############################################################
-step2FMM_restr <- function(param, vData, timePoints, omega){
+step2FMM_restr <- function(parameters, vData, timePoints, omega){
 
   n <- length(timePoints)
 
-  # FMM model
-  ffMob<-param[1] + param[2] * cos(param[4]+2*atan2(omega*sin((timePoints-param[3])/2),cos((timePoints-param[3])/2)))
-
-  # Residual sum of squares
-  RSS<-sum((ffMob - vData)^2)/n
-  sigma <- sqrt(RSS*n/(n-5))
+  # FMM model and residual sum of squares
+  modelFMM <- parameters[1] + parameters[2] *
+    cos(parameters[4]+2*atan2(omega*sin((timePoints - parameters[3])/2),
+                              cos((timePoints - parameters[3])/2)))
+  residualSS <- sum((modelFMM - vData)^2)/n
+  sigma <- sqrt(residualSS*n/(n - 5))
 
   # When amplitude condition is valid, it returns RSS
   # else it returns infinite.
-  maxi<-param[1]+param[2]
-  mini<-param[1]-param[2]
-  rest1 <- maxi <= max(vData)+1.96*sigma
-  rest2 <- mini >= min(vData)-1.96*sigma
+  amplitudeUpperBound <- parameters[1] + parameters[2]
+  amplitudeLowerBound <- parameters[1] - parameters[2]
+  rest1 <- amplitudeUpperBound <= max(vData) + 1.96*sigma
+  rest2 <- amplitudeLowerBound >= min(vData) - 1.96*sigma
 
   # Other integrity conditions that must be met
-  rest3 <- param[2] > 0 #A > 0
+  rest3 <- parameters[2] > 0 #A > 0
   if(rest1 & rest2 & rest3){
-    return(RSS)
+    return(residualSS)
   }else{
     return(Inf)
   }
-
 }
 
 
@@ -564,7 +560,6 @@ fitFMM_restr_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
     predichosComponente[[i]] <- rep(0,n)
   }
   prevAdjMob <- NULL
-
 
   # Backfitting algorithm: iteration
   for(i in 1:maxiter){
@@ -750,7 +745,7 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
   n <- length(vData)
 
   if(is.list(alphaGrid)){
-    stop("alphaGrid as list not supported when specifying omegaRestrictions")
+    stop("alphaGrid as list not supported when specifying alphaRestrictions")
   }
 
   if(is.list(omegaGrid)){
@@ -802,7 +797,7 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
         }
 
         if(numComponents > 1){
-          iteraciones <- min(numComponents+1, 4)
+          iteraciones <- min(numComponents + 1, 4)
         } else {
           iteraciones <- 1
         }
@@ -930,7 +925,7 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
   # Residual sum of squares
   SSE <- sum((adjMob-vData)^2)
 
-  names(A) <- paste("A",1:length(A),sep="")
+  names(A) <- paste("A", 1:length(A),sep="")
 
   # Returns an object of class FMM
   outMobius <- FMM(
