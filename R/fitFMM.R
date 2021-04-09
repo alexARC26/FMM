@@ -120,6 +120,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   omegaMin <- 0.0001
   omegaMax <- 1
   omegaGrid <- exp(seq(log(omegaMin),log(omegaMax),length.out = lengthOmegaGrid))
+
   staticComponents <- NULL
   objectFMM <- NULL
 
@@ -173,13 +174,13 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
         fittedFMM <- fitFMM_restr_beta(summarizedData, timePoints, nback,
                                  betaRestrictions, maxiter, stopFunction,
                                  objectFMM, staticComponents, lengthAlphaGrid,
-                                 lengthOmegaGrid, alphaGrid, omegaMax,
-                                 omegaGrid, numReps, showProgress)
+                                 lengthOmegaGrid, alphaGrid, omegaMin, omegaMax,
+                                 omegaGrid, numReps, showProgress, usedApply = usedApply)
       } else {
         fittedFMM <- fitFMM_restr_omega_beta(vData,timePoints, nback,betaRestrictions,
                                        omegaRestrictions, maxiter, stopFunction,
                                        lengthAlphaGrid, lengthOmegaGrid, alphaGrid,
-                                       omegaMax, omegaGrid, numReps, showProgress)
+                                       omegaMin, omegaMax, omegaGrid, numReps, showProgress)
       }
     }
   }
