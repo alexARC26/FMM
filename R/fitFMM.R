@@ -127,6 +127,11 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   betaRestrictions <- sort(betaRestrictions)
   omegaRestrictions <- sort(omegaRestrictions)
 
+  if(length(unique(omegaRestrictions)) != nback){
+    parallelize = TRUE
+  }
+
+
   if(showTime) time.ini <- Sys.time()
 
   # If data has more than one period, it must be summarized
