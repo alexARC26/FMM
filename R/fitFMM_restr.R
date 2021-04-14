@@ -58,8 +58,6 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     doParallel::registerDoParallel(cl)
   }
 
-  print("Estamos en la funcion") #################################################################
-
   # External loop on the omega grid, setting its value
   objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
 
