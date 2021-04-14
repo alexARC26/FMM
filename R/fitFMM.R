@@ -15,11 +15,8 @@
 #'
 #' @param nback Number of FMM components to be fitted. Its default value is 1.
 #'
-#' @param betaRestrictions An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{beta} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{beta1=beta2=beta3} and
-#'   \code{beta4=beta5}. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on \code{beta} parameters.
-#'
-#' @param omegaRestrictions An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{omega} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{omega1=omega2=omega3} and
-#'   \code{omega4=omega5}. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on \code{omega} parameters.
+#' @param betaOmegaRestrictions An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{beta} and \code{omega} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{beta1=beta2=beta3} and
+#'   \code{beta4=beta5} and the same with omegas. In brief, the waves are restricted to have the same shape. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on shape parameters (\code{beta} and \code{omega}).
 #'
 #' @param maxiter Maximum number of iterations for the backfitting algorithm. By default, it is set at \code{nback}.
 #'
@@ -109,9 +106,8 @@
 #' plotFMM(fit2w.rest, components = TRUE)
 #'
 fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
-                   nback = 1, betaRestrictions = 1:nback,
-                   omegaRestrictions = 1:nback, maxiter = nback,
-                   stopFunction = alwaysFalse,
+                   nback = 1, betaOmegaRestrictions = 1:nback,
+                   maxiter = nback, stopFunction = alwaysFalse,
                    lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                    numReps = 3, showProgress = TRUE, showTime = TRUE,
                    parallelize = FALSE, restrExactSolution = FALSE){
@@ -124,13 +120,12 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   staticComponents <- NULL
   objectFMM <- NULL
 
-  betaRestrictions <- sort(betaRestrictions)
-  omegaRestrictions <- sort(omegaRestrictions)
+  betaRestrictions <- sort(betaOmegaRestrictions)
+  omegaRestrictions <- sort(betaOmegaRestrictions)
 
   if(length(unique(omegaRestrictions)) != nback){
     parallelize = TRUE
   }
-
 
   if(showTime) time.ini <- Sys.time()
 
@@ -161,31 +156,32 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   usedApply_Cluster <- getApply(parallelize)
   usedApply <- usedApply_Cluster[[1]]
 
+  ### fitFMM_unit
   if(nback == 1){
     fittedFMM <- fitFMM_unit(vData = summarizedData, timePoints = timePoints,
-                       lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
-                       alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
-                       omegaGrid = omegaGrid, numReps = numReps, usedApply = usedApply)
-
+                             lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
+                             alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
+                             omegaGrid = omegaGrid, numReps = numReps, usedApply = usedApply)
   } else {
-    if(length(unique(betaRestrictions)) == nback &
-       length(unique(omegaRestrictions)) == nback){
+    ### fitFMM_back:
+    if(length(unique(betaOmegaRestrictions)) == nback){
       fittedFMM <- fitFMM_back(summarizedData, nback, timePoints, maxiter, stopFunction,
-                         lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMin, omegaMax,
-                         omegaGrid, numReps, showProgress, usedApply = usedApply)
+                               lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMin, omegaMax,
+                               omegaGrid, numReps, showProgress, usedApply = usedApply)
+      ### fitFMM_restr:
     } else {
-      if(length(unique(omegaRestrictions)) == nback &
-         length(unique(betaRestrictions)) != nback){
-        fittedFMM <- fitFMM_restr_beta(summarizedData, timePoints, nback,
-                                 betaRestrictions, maxiter, stopFunction,
-                                 objectFMM, staticComponents, lengthAlphaGrid,
-                                 lengthOmegaGrid, alphaGrid, omegaMin, omegaMax,
-                                 omegaGrid, numReps, showProgress, usedApply = usedApply)
+
+        ### (exact solution)
+      if(restrExactSolution){
+        fittedFMM <- fitFMM_restr(vData = vData, timePoints = timePoints, nback=nback,
+                                  betaRestrictions = betaRestrictions, omegaRestrictions = omegaRestrictions,
+                                  maxiter = 5, parallelize = TRUE)
+        ### fitFMM_restr: aproximated solution
       } else {
-        fittedFMM <- fitFMM_restr_omega_beta(vData,timePoints, nback,betaRestrictions,
-                                       omegaRestrictions, maxiter, stopFunction,
-                                       lengthAlphaGrid, lengthOmegaGrid, alphaGrid,
-                                       omegaMin, omegaMax, omegaGrid, numReps, showProgress)
+        fittedFMM <- fitFMM_restr_omega_beta(vData,timePoints, nback, betaRestrictions,
+                                             omegaRestrictions, maxiter, stopFunction,
+                                             lengthAlphaGrid, lengthOmegaGrid, alphaGrid,
+                                             omegaMin, omegaMax, omegaGrid, numReps, showProgress)
       }
     }
   }

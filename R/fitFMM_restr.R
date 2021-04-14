@@ -6,7 +6,6 @@
 #   stepOmega:              to optimize omega.
 #   fitFMM_unit_restr:      to fit monocomponent FMM models with fixed omega.
 #   step2FMM_restr:         second step of FMM fitting process with fixed omega.
-#   fitFMM_restr_beta:      to fit multicomponent FMM models with beta restricted.
 #   fitFMM_restr_omegaBeta: to fit restricted multicomponent FMM models.
 #                           Nested backfitting algorithm is used.
 ###############################################################
@@ -39,7 +38,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                       alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMax = 1,
                       omegaGrid = exp(seq(log(0.001),log(omegaMax), length.out = lengthOmegaGrid)),
-                      numReps = 3){
+                      numReps = 3, parallelize = FALSE){
 
   n <- length(vData)
   betaRestrictions <- sort(betaRestrictions)
@@ -52,6 +51,14 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   listOmegas <- replicateGrid(omegaGrid, numOmegas)
   gridOmegas <- expand.grid(listOmegas)
   omegasIter <- gridOmegas[,omegaRestrictions]
+
+  if(parallelize){
+    nCores <- parallel::detectCores() - 1
+    cl <- parallel::makeCluster(nCores, outfile="")
+    doParallel::registerDoParallel(cl)
+  }
+
+  print("Estamos en la funcion") #################################################################
 
   # External loop on the omega grid, setting its value
   objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
@@ -171,7 +178,9 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     # Residual sum of squares
     SSE <- sum((adjMob-vData)^2) + SSE.k
 
-    names(A) <- paste("A",1:length(A),sep="")
+    names(A) <- paste("A", 1:length(A), sep="")
+
+    if(parallelize) parallel::stopCluster(cluster)
 
     # Returns an object of class FMM
     outMobius <- FMM(
@@ -211,6 +220,19 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   beta <- getBeta(outMobius)
   alpha <- getAlpha(outMobius)
   omega <- uniqueOmegasOptim[omegaRestrictions]
+
+  elegidos <- rep(0,length(betaRestrictions))
+  vCompleto <- 1:length(betaRestrictions)
+  for(indRes in unique(betaRestrictions)){
+    numComponents <- sum(betaRestrictions == indRes)
+    primero <- vCompleto[elegidos == 0][1]
+    distanciaAbs <- abs(beta-beta[primero])
+    distanciaAbs[elegidos == 1] <- Inf
+    implicados <- order(distanciaAbs)[1:numComponents]
+    elegidos[implicados] <- 1
+    beta[implicados] <- angularmean(beta[implicados])%%(2*pi)
+  }
+
   cos.phi <- list()
   for(j in 1:nback){
     cos.phi[[j]] <- cos(beta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
