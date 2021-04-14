@@ -119,10 +119,8 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   staticComponents <- NULL
   objectFMM <- NULL
 
-  betaRestrictions <- sort(betaOmegaRestrictions)
-  omegaRestrictions <- sort(betaOmegaRestrictions)
-
-  if(length(unique(omegaRestrictions)) != nback){
+  betaOmegaRestrictions <- sort(betaOmegaRestrictions)
+  if(length(unique(betaOmegaRestrictions)) != nback){
     parallelize = TRUE
   }
 
@@ -175,7 +173,8 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
       #### Exact solution
       if(restrExactSolution){
         fittedFMM <- fitFMM_restr(vData = vData, timePoints = timePoints, nback = nback,
-                                  betaRestrictions = betaRestrictions, omegaRestrictions = omegaRestrictions,
+                                  betaRestrictions = betaOmegaRestrictions,
+                                  omegaRestrictions = betaOmegaRestrictions,
                                   maxiter = maxiter, stopFunction = stopFunction,
                                   lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                   alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
@@ -183,7 +182,8 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
       #### Approximated solution
       } else {
         fittedFMM <- fitFMM_restr_omega_beta(vData = vData, timePoints = timePoints, nback = nback,
-                                             betaRestrictions = betaRestrictions, omegaRestrictions = omegaRestrictions,
+                                             betaRestrictions = betaOmegaRestrictions,
+                                             omegaRestrictions = betaOmegaRestrictions,
                                              maxiter = maxiter, stopFunction = alwaysFalse,
                                              lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                              alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
