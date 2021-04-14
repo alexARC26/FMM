@@ -178,7 +178,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
 
     names(A) <- paste("A", 1:length(A), sep="")
 
-    if(parallelize) parallel::stopCluster(cluster)
+    if(parallelize) parallel::stopCluster(cl)
 
     # Returns an object of class FMM
     outMobius <- FMM(

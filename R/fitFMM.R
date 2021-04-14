@@ -16,7 +16,7 @@
 #' @param nback Number of FMM components to be fitted. Its default value is 1.
 #'
 #' @param betaOmegaRestrictions An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{beta} and \code{omega} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{beta1=beta2=beta3} and
-#'   \code{beta4=beta5} and the same with omegas. In brief, the waves are restricted to have the same shape. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on shape parameters (\code{beta} and \code{omega}).
+#'   \code{beta4=beta5} and \code{omega1=omega2=omega3} and \code{omega4=omega5}. In brief, some waves are restricted to have the same shape. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on shape parameters (\code{beta} and \code{omega}).
 #'
 #' @param maxiter Maximum number of iterations for the backfitting algorithm. By default, it is set at \code{nback}.
 #'
@@ -35,7 +35,6 @@
 #' @param showTime \code{TRUE} to display execution time on the console.
 #'
 #' @param parallelize \code{TRUE} to use parallelized procedure to fit restricted FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to 12, or if the machine has less, the number of cores - 1.
-#'
 #'
 #' @details
 #' Data will be collected over \code{nPeriods} periods. When \code{nPeriods > 1} the fitting is carried out by averaging the data collected
@@ -170,12 +169,11 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                                omegaGrid, numReps, showProgress, usedApply = usedApply)
       ### fitFMM_restr:
     } else {
-
         ### (exact solution)
       if(restrExactSolution){
         fittedFMM <- fitFMM_restr(vData = vData, timePoints = timePoints, nback=nback,
                                   betaRestrictions = betaRestrictions, omegaRestrictions = omegaRestrictions,
-                                  maxiter = 5, parallelize = TRUE)
+                                  maxiter = 5)
         ### fitFMM_restr: aproximated solution
       } else {
         fittedFMM <- fitFMM_restr_omega_beta(vData,timePoints, nback, betaRestrictions,
