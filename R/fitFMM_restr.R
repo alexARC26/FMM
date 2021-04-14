@@ -27,6 +27,7 @@
 #   lengthAlphaGrid, lengthOmegaGrid: precision of the grid of alpha and omega parameters.
 #   alphaGrid, omegaGrid: grids of alpha and omega parameters.
 #                         They can be a list with nback elements, each one for an iteration.
+#   omegaMin: min value for omega.
 #   omegaMax: max value for omega.
 #   numReps: number of times the alpha-omega grid search is repeated.
 #   parallelize: TRUE to use parallelized procedure to fit restricted FMM model.
@@ -36,8 +37,8 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
                       betaRestrictions, omegaRestrictions, maxiter = nback,
                       stopFunction = alwaysFalse, objectFMM = NULL, staticComponents = NULL,
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                      alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMax = 1,
-                      omegaGrid = exp(seq(log(0.001),log(omegaMax), length.out = lengthOmegaGrid)),
+                      alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
+                      omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out = lengthOmegaGrid)),
                       numReps = 3, parallelize = FALSE){
 
   n <- length(vData)
@@ -64,14 +65,9 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     omegas <- as.numeric(omegas)
 
     # Object initialization
-    predichosComponente <- list()
+    predichosComponente <- replicate(nback, rep(0,n), simplify = FALSE)
     ajusteComponente <- list()
-
-    for(i in 1:nback){
-      predichosComponente[[i]] <- rep(0,n)
-    }
     prevAdjMob <- NULL
-
 
     # Backfitting algorithm: iteration
     for(i in 1:maxiter){
@@ -505,7 +501,7 @@ step2FMM_restr <- function(parameters, vData, timePoints, omega){
 fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
                             betaRestrictions, omegaRestrictions, maxiter = nback,
                             stopFunction = alwaysFalse, lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                            alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid), omegaMin = 0.001, omegaMax = 1,
+                            alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
                             omegaGrid = exp(seq(log(omegaMin),log(omegaMax),length.out=lengthOmegaGrid)),
                             numReps = 3, showProgress = TRUE){
 
