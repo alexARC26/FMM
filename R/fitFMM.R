@@ -36,6 +36,8 @@
 #'
 #' @param parallelize \code{TRUE} to use parallelized procedure to fit restricted FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to 12, or if the machine has less, the number of cores - 1.
 #'
+#' @param restrExactSolution \code{FALSE} to use an aproximated algorithm to fit the model (default). If \code{TRUE} is specified, an nearly exact solution is computed.
+#'
 #' @details
 #' Data will be collected over \code{nPeriods} periods. When \code{nPeriods > 1} the fitting is carried out by averaging the data collected
 #' at each time point across all considered periods. The model is fitting to summarized data.
@@ -95,13 +97,12 @@
 #' getSSE(fit3)
 #'
 #' # Two component FMM model with beta and omega restricted
-#' restFMM2w_data <- generateFMM(M = 3, A = c(7, 4),
-#'                              alpha = c(0.5, 5), beta = c(rep(3, 2)), omega = rep(0.05, 2),
-#'                               from = 0, to = 2*pi, length.out = 100,
+#' restFMM2w_data <- generateFMM(M = 3, A = c(7, 4), alpha = c(0.5, 5), beta = c(rep(3, 2)),
+#'                               omega = rep(0.05, 2), from = 0, to = 2*pi, length.out = 100,
 #'                               sigmaNoise = 0.3, plot = FALSE)
 #' fit2w.rest <- fitFMM(restFMM2w_data$y, nback = 2, maxiter = 1, numReps = 1,
 #'                      lengthAlphaGrid = 15, lengthOmegaGrid = 10,
-#'                      betaRestrictions = c(1, 1), omegaRestrictions=c(1, 1))
+#'                      betaOmegaRestrictions = c(1, 1))
 #' plotFMM(fit2w.rest, components = TRUE)
 #'
 fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
@@ -120,9 +121,6 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   objectFMM <- NULL
 
   betaOmegaRestrictions <- sort(betaOmegaRestrictions)
-  if(length(unique(betaOmegaRestrictions)) != nback){
-    parallelize = TRUE
-  }
 
   if(showTime) time.ini <- Sys.time()
 
@@ -132,7 +130,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     if(n %% nPeriods != 0) stop("Data length is not a multiple of nPeriods")
     dataMatrix <- matrix(vData, nrow = nPeriods, ncol = n/nPeriods, byrow = TRUE)
     #vDataAnt <- vData
-    summarizedData <- apply(dataMatrix,2,mean)
+    summarizedData <- apply(dataMatrix, 2, mean)
   } else {
     summarizedData <- vData
   }
@@ -150,7 +148,12 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   }
 
   # Used apply function for compute FMM models
-  usedApply_Cluster <- getApply(parallelize)
+  if(length(unique(betaOmegaRestrictions)) != nback && !parallelize){
+    usedApply_Cluster <- getApply(parallelize = TRUE, nCores = 1)
+  }else{
+    usedApply_Cluster <- getApply(parallelize = parallelize)
+  }
+
   usedApply <- usedApply_Cluster[[1]]
 
   ### fitFMM_unit
@@ -172,27 +175,29 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     } else {
       #### Exact solution
       if(restrExactSolution){
-        fittedFMM <- fitFMM_restr(vData = vData, timePoints = timePoints, nback = nback,
+        fittedFMM <- fitFMM_restr(vData = summarizedData, timePoints = timePoints, nback = nback,
                                   betaRestrictions = betaOmegaRestrictions,
                                   omegaRestrictions = betaOmegaRestrictions,
                                   maxiter = maxiter, stopFunction = stopFunction,
                                   lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                   alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
-                                  omegaGrid = omegaGrid, numReps = numReps)
+                                  omegaGrid = omegaGrid, numReps = numReps, parallelize = parallelize)
       #### Approximated solution
       } else {
-        fittedFMM <- fitFMM_restr_omega_beta(vData = vData, timePoints = timePoints, nback = nback,
+        fittedFMM <- fitFMM_restr_omega_beta(vData = summarizedData, timePoints = timePoints, nback = nback,
                                              betaRestrictions = betaOmegaRestrictions,
                                              omegaRestrictions = betaOmegaRestrictions,
                                              maxiter = maxiter, stopFunction = alwaysFalse,
                                              lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                              alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
-                                             omegaGrid = omegaGrid, numReps = numReps, showProgress = showProgress)
+                                             omegaGrid = omegaGrid, numReps = numReps, showProgress = showProgress,
+                                             parallelize = parallelize)
       }
     }
   }
 
   cluster <- usedApply_Cluster[[2]]
+
   if(!is.null(cluster)) parallel::stopCluster(cluster)
 
   if(showTime){

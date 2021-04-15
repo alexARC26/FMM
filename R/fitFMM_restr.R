@@ -53,12 +53,6 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   gridOmegas <- expand.grid(listOmegas)
   omegasIter <- gridOmegas[,omegaRestrictions]
 
-  if(parallelize){
-    nCores <- parallel::detectCores() - 1
-    cl <- parallel::makeCluster(nCores, outfile="")
-    doParallel::registerDoParallel(cl)
-  }
-
   # External loop on the omega grid, setting its value
   objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
 
@@ -82,10 +76,9 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
         }
 
         # component j fitting using fitFMM_unit_restr function
-        ajusteComponente[[j]] <- fitFMM_unit_restr(vDataAjuste,omegas[j], timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
+        ajusteComponente[[j]] <- fitFMM_unit_restr(vDataAjuste, omegas[j], timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
                                              alphaGrid = alphaGrid[[j]], numReps = numReps)
         predichosComponente[[j]] <- getFittedValues(ajusteComponente[[j]])
-
       }
 
       # Check stop criterion
@@ -156,7 +149,6 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
       SSE.k <- 10^6
     }
 
-
     # Fitted values:
     cos.phi <- list()
     for(j in 1:nback){
@@ -173,8 +165,6 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     SSE <- sum((adjMob-vData)^2) + SSE.k
 
     names(A) <- paste("A", 1:length(A), sep="")
-
-    if(parallelize) parallel::stopCluster(cl)
 
     # Returns an object of class FMM
     outMobius <- FMM(
@@ -242,7 +232,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   # Residual sum of squares
   SSE <- sum((adjMob-vData)^2)
 
-  names(A) <- paste("A",1:length(A),sep="")
+  names(A) <- paste("A",1:length(A), sep = "")
 
   nIter <- getNIter(outMobius)
 
@@ -502,8 +492,8 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
                             betaRestrictions, omegaRestrictions, maxiter = nback,
                             stopFunction = alwaysFalse, lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                             alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
-                            omegaGrid = exp(seq(log(omegaMin),log(omegaMax),length.out=lengthOmegaGrid)),
-                            numReps = 3, showProgress = TRUE){
+                            omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out=lengthOmegaGrid)),
+                            numReps = 3, showProgress = TRUE, parallelize = FALSE){
 
   n <- length(vData)
 
@@ -571,7 +561,7 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
                                                   omegaRestrictions = rep(1,numComponents), maxiter = iteraciones,
                                                   lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                                   alphaGrid = alphaGrid, omegaMax = omegaMax, omegaGrid = omegaGrid,
-                                                  numReps = numReps)
+                                                  numReps = numReps, parallelize = parallelize)
 
         predichosBloque[[indBloque]] <- getFittedValues(ajusteBloque[[indBloque]])
 
