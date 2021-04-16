@@ -147,6 +147,92 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
 }
 
 ################################################################################
+# Internal function: fitFMM from a FMM object
+# Same arguments as fitFMM function and two
+# additional arguments:
+#   objectFMM: to start fitting from a previous objectFMM
+#   staticComponents: vector containing the components that will not be modified
+################################################################################
+# refineFMM <- function(vData, nPeriods = 1, timePoints = NULL, nback = 1,
+#                       betaRestrictions = 1:nback, omegaRestrictions = 1:nback,
+#                       maxiter = nback, stopFunction = alwaysFalse,
+#                       objectFMM = NULL, staticComponents = NULL,
+#                       lengthAlphaGrid = 48, lengthOmegaGrid = 24, numReps = 3,
+#                       showProgress = TRUE, showTime = TRUE, parallelize=FALSE) {
+#
+#   alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid)
+#   omegaMax = 1
+#   omegaGrid = exp(seq(log(0.0001),log(omegaMax),length.out=lengthOmegaGrid))
+#
+#   if(showTime) time.ini <- Sys.time()
+#
+#   if(nPeriods > 1){
+#     n <- length(vData)
+#     if(n%%nPeriods != 0) stop("Data length is not a multiple of nPeriods")
+#     dataMatrix <- matrix(vData,nrow=nPeriods,ncol=n/nPeriods,byrow = TRUE)
+#     #vDataAnt <- vData
+#     summarizedData <- apply(dataMatrix,2,mean)
+#   } else {
+#     summarizedData <- vData
+#   }
+#
+#   if(is.null(timePoints)){
+#     timePoints<-seqTimes(length(summarizedData))
+#   } else {
+#     if(any(timePoints < 0) | any(timePoints > 2*pi)){
+#       stop("timePoints must be between 0 and 2*pi")
+#     }
+#   }
+#
+#   if(nback == 1){
+#     fittedFMM <- fitFMM_unit(summarizedData, timePoints, lengthAlphaGrid,
+#                        lengthOmegaGrid, alphaGrid, omegaMax, omegaGrid, numReps)
+#   } else {
+#     if(length(unique(betaRestrictions)) == nback &
+#        length(unique(omegaRestrictions)) == nback){
+#       fittedFMM <- fitFMM_back(summarizedData, timePoints, nback, maxiter,
+#                          stopFunction, objectFMM, staticComponents,
+#                          lengthAlphaGrid, lengthOmegaGrid, alphaGrid, omegaMax,
+#                          omegaGrid, numReps, showProgress)
+#     } else {
+#       if(length(unique(omegaRestrictions)) == nback &
+#          length(unique(betaRestrictions)) != nback){
+#         fittedFMM <- fitFMM_restr_beta(summarizedData, timePoints, nback,
+#                                  betaRestrictions, maxiter, stopFunction,
+#                                  objectFMM, staticComponents, lengthAlphaGrid,
+#                                  lengthOmegaGrid, alphaGrid, omegaMax,omegaGrid,
+#                                  numReps, showProgress)
+#       } else {
+#         if(showProgress)
+#           warning("showProgress not available when specifying omegaRestrictions.")
+#         fittedFMM <- fitFMM_restr(summarizedData, timePoints, nback, betaRestrictions,
+#                             omegaRestrictions, maxiter, stopFunction, objectFMM,
+#                             staticComponents, lengthAlphaGrid, lengthOmegaGrid,
+#                             alphaGrid, omegaMax, omegaGrid, numReps,parallelize)
+#       }
+#     }
+#   }
+#
+#   if(showTime){
+#     time.end <- Sys.time()
+#     cat(time.end-time.ini)
+#   }
+#
+#   fittedFMM@nPeriods <- nPeriods
+#   fittedFMM@data <- vData
+#
+#   explainedVarOrder <- order(fittedFMM@R2,decreasing = TRUE)
+#
+#   fittedFMM@A <- fittedFMM@A[explainedVarOrder]
+#   fittedFMM@alpha <- fittedFMM@alpha[explainedVarOrder]
+#   fittedFMM@beta <- fittedFMM@beta[explainedVarOrder]
+#   fittedFMM@omega <- fittedFMM@omega[explainedVarOrder]
+#   fittedFMM@R2 <- fittedFMM@R2[explainedVarOrder]
+#
+#   return(fittedFMM)
+# }
+
+################################################################################
 # Internal function: to calculate the percentage of variability explained by
 #   the FMM model
 # Arguments:
