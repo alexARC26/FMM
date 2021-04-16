@@ -63,7 +63,7 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
         completedPercentage <- completedPercentage + 100/(nback*maxiter)
         if(ceiling(previousPercentage) < floor(completedPercentage)){
           progressDone<-paste(rep("=",sum((seq(ceiling(previousPercentage), floor(completedPercentage), by = 1)
-                                           %% partialMarkLength == 0))), collapse ="")
+                                           %% partialMarkLength == 0))), collapse = "")
           cat(progressDone)
           previousPercentage <- completedPercentage
         }

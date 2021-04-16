@@ -9,8 +9,7 @@ fitFMM(
   nPeriods = 1,
   timePoints = NULL,
   nback = 1,
-  betaRestrictions = 1:nback,
-  omegaRestrictions = 1:nback,
+  betaOmegaRestrictions = 1:nback,
   maxiter = nback,
   stopFunction = alwaysFalse,
   lengthAlphaGrid = 48,
@@ -18,7 +17,8 @@ fitFMM(
   numReps = 3,
   showProgress = TRUE,
   showTime = TRUE,
-  parallelize = FALSE
+  parallelize = FALSE,
+  restrExactSolution = FALSE
 )
 }
 \arguments{
@@ -31,11 +31,8 @@ in which case they are equally spaced in range \eqn{[0, 2\pi]}. It must be betwe
 
 \item{nback}{Number of FMM components to be fitted. Its default value is 1.}
 
-\item{betaRestrictions}{An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{beta} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{beta1=beta2=beta3} and
-\code{beta4=beta5}. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on \code{beta} parameters.}
-
-\item{omegaRestrictions}{An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{omega} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{omega1=omega2=omega3} and
-\code{omega4=omega5}. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on \code{omega} parameters.}
+\item{betaOmegaRestrictions}{An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{beta} and \code{omega} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{beta1=beta2=beta3} and
+\code{beta4=beta5} and \code{omega1=omega2=omega3} and \code{omega4=omega5}. In brief, some waves are restricted to have the same shape. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on shape parameters (\code{beta} and \code{omega}).}
 
 \item{maxiter}{Maximum number of iterations for the backfitting algorithm. By default, it is set at \code{nback}.}
 
@@ -54,6 +51,8 @@ By default it is set to 24 possible values of omega, equally spaced between 0 an
 \item{showTime}{\code{TRUE} to display execution time on the console.}
 
 \item{parallelize}{\code{TRUE} to use parallelized procedure to fit restricted FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to 12, or if the machine has less, the number of cores - 1.}
+
+\item{restrExactSolution}{\code{FALSE} to use an aproximated algorithm to fit the model (default). If \code{TRUE} is specified, an nearly exact solution is computed.}
 }
 \value{
 An S4 object of class \code{'FMM'} with information about the fitted model. The object contains the following slots:
@@ -111,13 +110,12 @@ fit3 <- fitFMM(FMM_data$y, lengthAlphaGrid = 10, lengthOmegaGrid = 5, numReps = 
 getSSE(fit3)
 
 # Two component FMM model with beta and omega restricted
-restFMM2w_data <- generateFMM(M = 3, A = c(7, 4),
-                             alpha = c(0.5, 5), beta = c(rep(3, 2)), omega = rep(0.05, 2),
-                              from = 0, to = 2*pi, length.out = 100,
+restFMM2w_data <- generateFMM(M = 3, A = c(7, 4), alpha = c(0.5, 5), beta = c(rep(3, 2)),
+                              omega = rep(0.05, 2), from = 0, to = 2*pi, length.out = 100,
                               sigmaNoise = 0.3, plot = FALSE)
 fit2w.rest <- fitFMM(restFMM2w_data$y, nback = 2, maxiter = 1, numReps = 1,
                      lengthAlphaGrid = 15, lengthOmegaGrid = 10,
-                     betaRestrictions = c(1, 1), omegaRestrictions=c(1, 1))
+                     betaOmegaRestrictions = c(1, 1))
 plotFMM(fit2w.rest, components = TRUE)
 
 }
