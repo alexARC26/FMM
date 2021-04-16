@@ -57,10 +57,10 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
 
     omegas <- as.numeric(omegas)
-
     # Object initialization
-    predichosComponente <- replicate(nback, rep(0,n), simplify = FALSE)
-    ajusteComponente <- list()
+    ### fittedValuesPerComponent <- replicate(nback, rep(0,n), simplify = FALSE)
+    fittedValuesPerComponent <- matrix(0, ncol = nback, nrow = n)
+    fittedFMMPerComponent <- list()
     prevAdjMob <- NULL
 
     # Backfitting algorithm: iteration
@@ -68,101 +68,68 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
       # Backfitting algorithm: component
       for(j in 1:nback){
         # data for component j: difference between vData and all other components fitted values
-        vDataAjuste <- vData
-        for(k in 1:nback){
-          if(j != k){
-            vDataAjuste <- vDataAjuste - predichosComponente[[k]]
-          }
-        }
-
+        backFittingData <- vData - apply(as.matrix(fittedValuesPerComponent[,-j]), 1, sum)
         # component j fitting using fitFMM_unit_restr function
-        ajusteComponente[[j]] <- fitFMM_unit_restr(vDataAjuste, omegas[j], timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
-                                             alphaGrid = alphaGrid[[j]], numReps = numReps)
-        predichosComponente[[j]] <- getFittedValues(ajusteComponente[[j]])
+        fittedFMMPerComponent[[j]] <- fitFMM_unit_restr(backFittingData, omegas[j], timePoints = timePoints,
+                                                   lengthAlphaGrid = lengthAlphaGrid, alphaGrid = alphaGrid[[j]],
+                                                   numReps = numReps)
+        fittedValuesPerComponent[,j] <- fittedFMMPerComponent[[j]]@fittedValues
       }
 
       # Check stop criterion
       # Fitted values as sum of all components
-      adjMob <- rep(0,n)
-      for(j in 1:nback){
-        adjMob <- adjMob + predichosComponente[[j]]
-      }
+      adjMob <- apply(fittedValuesPerComponent, 1, sum)
+
       if(!is.null(prevAdjMob)){
 
-        if(PV(vData,prevAdjMob) > PV(vData,adjMob)){
-          ajusteComponente <- ajusteComponenteAnt
+        if(PV(vData, prevAdjMob) > PV(vData, adjMob)){
+          fittedFMMPerComponent <- previousFittedFMMPerComponent
           adjMob <- prevAdjMob
           break
         }
-
-        if(stopFunction(vData,adjMob,prevAdjMob)){
+        if(stopFunction(vData, adjMob, prevAdjMob)){
           break
         }
-
       }
 
       prevAdjMob <- adjMob
-      ajusteComponenteAnt <- ajusteComponente
-
+      previousFittedFMMPerComponent <- fittedFMMPerComponent
     }
-
-    nIter <- i
 
     # alpha, beta y omega estimates
-    alpha <- rep(0,nback)
-    beta <- rep(0,nback)
-    omega <- rep(0,nback)
-    for(j in 1:nback){
-        alpha[j] <- getAlpha(ajusteComponente[[j]])
-        beta[j] <- getBeta(ajusteComponente[[j]])
-        omega[j] <- getOmega(ajusteComponente[[j]])
-    }
+    alpha <- unlist(lapply(fittedFMMPerComponent, getAlpha))
+    beta <- unlist(lapply(fittedFMMPerComponent, getBeta))
+    omega <- unlist(lapply(fittedFMMPerComponent, getOmega))
 
     ## Check if the solution is valid
     # beta restrictions: calculate angular mean of beta parameters
     # the nearest betas are chosen
-    RestBeta<-beta
-    elegidos <- rep(0,length(betaRestrictions))
+    restBeta <- beta
+    markedBetas <- rep(0,length(betaRestrictions))
     vCompleto <- 1:length(betaRestrictions)
     for(indRes in unique(betaRestrictions)){
       numComponents <- sum(betaRestrictions == indRes)
-      primero <- vCompleto[elegidos == 0][1]
-      distanciaAbs <- abs(RestBeta-RestBeta[primero])
-      distanciaAbs[elegidos == 1] <- Inf
+      primero <- vCompleto[markedBetas == 0][1]
+      distanciaAbs <- abs(restBeta-restBeta[primero])
+      distanciaAbs[markedBetas == 1] <- Inf
       implicados <- order(distanciaAbs)[1:numComponents]
-      elegidos[implicados] <- 1
-      RestBeta[implicados] <- angularmean(RestBeta[implicados])%%(2*pi)
+      markedBetas[implicados] <- 1
+      restBeta[implicados] <- angularmean(restBeta[implicados])%%(2*pi)
     }
 
     # A and M estimates are recalculated by linear regression
-    cos.phi <- list()
+    designMatrix <- matrix(0, ncol = nback, nrow = n)
     for(j in 1:nback){
-      cos.phi[[j]] <- cos(RestBeta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
+      designMatrix[,j] <- cos(restBeta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
     }
-    M <- matrix(unlist(cos.phi),ncol=nback)
-    regresion <- lm(vData ~ M)
+    regresion <- lm(vData ~ designMatrix)
+
     M <- coefficients(regresion)[1]
     A <- coefficients(regresion)[-1]
-
-    SSE.k <- 0
-    if(sum(A < 0,na.rm=TRUE) > 0){
-      SSE.k <- 10^6
-    }
-
-    # Fitted values:
-    cos.phi <- list()
-    for(j in 1:nback){
-      cos.phi[[j]] <- cos(beta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
-    }
-    M <- matrix(unlist(cos.phi),ncol=nback)
-    regresion <- lm(vData ~ M)
-    M <- coefficients(regresion)[1]
-    A <- coefficients(regresion)[-1]
-
     adjMob <- predict(regresion)
 
     # Residual sum of squares
-    SSE <- sum((adjMob-vData)^2) + SSE.k
+    SSE <- ifelse(sum(A < 0, na.rm = TRUE) > 0, Inf, sum((adjMob-vData)^2))
 
     names(A) <- paste("A", 1:length(A), sep="")
 
@@ -171,14 +138,14 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
       M = M,
       A = A,
       alpha = alpha,
-      beta = beta,
+      beta = restBeta,
       omega = omega,
       timePoints = timePoints,
       summarizedData = vData,
       fittedValues = adjMob,
       SSE = SSE,
       R2 = PVj(vData, timePoints, alpha, beta, omega),
-      nIter = nIter
+      nIter = i
     )
 
     return(outMobius)
@@ -205,24 +172,11 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   alpha <- getAlpha(outMobius)
   omega <- uniqueOmegasOptim[omegaRestrictions]
 
-  elegidos <- rep(0,length(betaRestrictions))
-  vCompleto <- 1:length(betaRestrictions)
-  for(indRes in unique(betaRestrictions)){
-    numComponents <- sum(betaRestrictions == indRes)
-    primero <- vCompleto[elegidos == 0][1]
-    distanciaAbs <- abs(beta-beta[primero])
-    distanciaAbs[elegidos == 1] <- Inf
-    implicados <- order(distanciaAbs)[1:numComponents]
-    elegidos[implicados] <- 1
-    beta[implicados] <- angularmean(beta[implicados])%%(2*pi)
-  }
-
-  cos.phi <- list()
+  designMatrix <- matrix(0, ncol = nback, nrow = n)
   for(j in 1:nback){
-    cos.phi[[j]] <- cos(beta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
+    designMatrix[,j] <- cos(restBeta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
   }
-  M <- matrix(unlist(cos.phi),ncol=nback)
-  regresion <- lm(vData ~ M)
+  regresion <- lm(vData ~ designMatrix)
   M <- coefficients(regresion)[1]
   A <- coefficients(regresion)[-1]
 
@@ -232,7 +186,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   # Residual sum of squares
   SSE <- sum((adjMob-vData)^2)
 
-  names(A) <- paste("A",1:length(A), sep = "")
+  names(A) <- paste("A", 1:length(A), sep = "")
 
   nIter <- getNIter(outMobius)
 
@@ -252,7 +206,6 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   )
 
   return(outMobiusFinal)
-
 }
 
 ###############################################################
@@ -301,9 +254,7 @@ stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
   }else{
     return(Inf)
   }
-
 }
-
 
 ###############################################################
 # Internal function: to fit monocomponent FMM models with fixed omega.
@@ -319,7 +270,6 @@ stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
 fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
                             lengthAlphaGrid = 48, alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
                             numReps = 3){
-
   n <- length(vData)
 
   ## Step 1: initial values of M, A, alpha, beta and omega
@@ -361,7 +311,7 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
     parFinal <- c(bestPar[1:4],omega)
   }
 
-  names(parFinal) <- c("M","A","alpha","beta","omega")
+  names(parFinal) <- c("M", "A", "alpha", "beta", "omega")
   adjMob <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] + 2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
   SSE <- sum((adjMob-vData)^2)
 
@@ -407,7 +357,6 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
 
     numReps <- numReps - 1
   }
-
   names(parFinal) <- c("M","A","alpha","beta","omega")
 
   # Returns an object of class FMM
@@ -427,7 +376,6 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
     R2 = 0,
     nIter = 0
   )
-
   return(outMobius)
 }
 
@@ -443,7 +391,6 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
 step2FMM_restr <- function(parameters, vData, timePoints, omega){
 
   n <- length(timePoints)
-
   # FMM model and residual sum of squares
   modelFMM <- parameters[1] + parameters[2] *
     cos(parameters[4]+2*atan2(omega*sin((timePoints - parameters[3])/2),
@@ -488,13 +435,12 @@ step2FMM_restr <- function(parameters, vData, timePoints, omega){
 # Note1: alphaGrid and omegaGrid as lists are not supported
 # Note2: a previous FMM object refine is not supported
 ###############################################################
-fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), nback,
-                            betaRestrictions, omegaRestrictions, maxiter = nback,
+fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vData)),
+                                  betaRestrictions, omegaRestrictions, maxiter = nback,
                             stopFunction = alwaysFalse, lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                             alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
                             omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out=lengthOmegaGrid)),
                             numReps = 3, showProgress = TRUE, parallelize = FALSE){
-
   n <- length(vData)
 
   if(is.list(alphaGrid)){
@@ -595,16 +541,12 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
         adjMob <- prevAdjMob
         break
       }
-
       if(stopFunction(vData,adjMob,prevAdjMob)){
         break
       }
-
     }
-
     prevAdjMob <- adjMob
     ajusteBloqueAnt <- ajusteBloque
-
   }
   nIter <- i
 
@@ -677,7 +619,6 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
 
   # Residual sum of squares
   SSE <- sum((adjMob-vData)^2)
-
   names(A) <- paste("A", 1:length(A),sep="")
 
   # Returns an object of class FMM
@@ -694,6 +635,5 @@ fitFMM_restr_omega_beta<-function(vData, timePoints = seqTimes(length(vData)), n
     R2 = PVj(vData, timePoints, alpha, beta, omega),
     nIter = nIter
   )
-
   return(outMobius)
 }
