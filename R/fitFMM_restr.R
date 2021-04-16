@@ -10,7 +10,6 @@
 #                           Nested backfitting algorithm is used.
 ###############################################################
 
-
 ###############################################################
 # Internal function: to fit restricted multicomponent FMM models.
 # An external grid for omega parameter is used for fitting process.
@@ -110,7 +109,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     for(indRes in unique(betaRestrictions)){
       numComponents <- sum(betaRestrictions == indRes)
       primero <- vCompleto[markedBetas == 0][1]
-      distanciaAbs <- abs(restBeta-restBeta[primero])
+      distanciaAbs <- abs(restBeta - restBeta[primero])
       distanciaAbs[markedBetas == 1] <- Inf
       implicados <- order(distanciaAbs)[1:numComponents]
       markedBetas[implicados] <- 1
@@ -174,7 +173,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
 
   designMatrix <- matrix(0, ncol = nback, nrow = n)
   for(j in 1:nback){
-    designMatrix[,j] <- cos(restBeta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
+    designMatrix[,j] <- cos(beta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
   }
   regresion <- lm(vData ~ designMatrix)
   M <- coefficients(regresion)[1]
