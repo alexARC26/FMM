@@ -52,6 +52,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   gridOmegas <- expand.grid(listOmegas)
   omegasIter <- gridOmegas[,omegaRestrictions]
 
+
   # External loop on the omega grid, setting its value
   objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
 
@@ -60,7 +61,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     ### fittedValuesPerComponent <- replicate(nback, rep(0,n), simplify = FALSE)
     fittedValuesPerComponent <- matrix(0, ncol = nback, nrow = n)
     fittedFMMPerComponent <- list()
-    prevAdjMob <- NULL
+    prevFittedFMMvalues <- NULL
 
     # Backfitting algorithm: iteration
     for(i in 1:maxiter){
@@ -77,21 +78,21 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
 
       # Check stop criterion
       # Fitted values as sum of all components
-      adjMob <- apply(fittedValuesPerComponent, 1, sum)
+      fittedFMMvalues <- apply(fittedValuesPerComponent, 1, sum)
 
-      if(!is.null(prevAdjMob)){
+      if(!is.null(prevFittedFMMvalues)){
 
-        if(PV(vData, prevAdjMob) > PV(vData, adjMob)){
+        if(PV(vData, prevFittedFMMvalues) > PV(vData, fittedFMMvalues)){
           fittedFMMPerComponent <- previousFittedFMMPerComponent
-          adjMob <- prevAdjMob
+          fittedFMMvalues <- prevFittedFMMvalues
           break
         }
-        if(stopFunction(vData, adjMob, prevAdjMob)){
+        if(stopFunction(vData, fittedFMMvalues, prevFittedFMMvalues)){
           break
         }
       }
 
-      prevAdjMob <- adjMob
+      prevFittedFMMvalues <- fittedFMMvalues
       previousFittedFMMPerComponent <- fittedFMMPerComponent
     }
 
@@ -100,35 +101,31 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     beta <- unlist(lapply(fittedFMMPerComponent, getBeta))
     omega <- unlist(lapply(fittedFMMPerComponent, getOmega))
 
-    ## Check if the solution is valid
     # beta restrictions: calculate angular mean of beta parameters
     # the nearest betas are chosen
     restBeta <- beta
-    markedBetas <- rep(0,length(betaRestrictions))
-    vCompleto <- 1:length(betaRestrictions)
+    markedBetas <- rep(0, length(betaRestrictions))
+    betaIndexVector <- 1:length(betaRestrictions)
     for(indRes in unique(betaRestrictions)){
       numComponents <- sum(betaRestrictions == indRes)
-      primero <- vCompleto[markedBetas == 0][1]
-      distanciaAbs <- abs(restBeta - restBeta[primero])
+      betaIndex <- betaIndexVector[markedBetas == 0][1]
+      distanciaAbs <- abs(restBeta - restBeta[betaIndex])
       distanciaAbs[markedBetas == 1] <- Inf
-      implicados <- order(distanciaAbs)[1:numComponents]
-      markedBetas[implicados] <- 1
-      restBeta[implicados] <- angularmean(restBeta[implicados])%%(2*pi)
+      nearestBetasIndex <- order(distanciaAbs)[1:numComponents]
+      markedBetas[nearestBetasIndex] <- 1
+      restBeta[nearestBetasIndex] <- angularmean(restBeta[nearestBetasIndex])%%(2*pi)
     }
 
     # A and M estimates are recalculated by linear regression
-    designMatrix <- matrix(0, ncol = nback, nrow = n)
-    for(j in 1:nback){
-      designMatrix[,j] <- cos(restBeta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
-    }
-    regresion <- lm(vData ~ designMatrix)
+    cosPhi <- calculateCosPhi(alpha=alpha, beta=beta, omega=omega, timePoints=timePoints)
+    regresion <- lm(vData ~ cosPhi)
 
     M <- coefficients(regresion)[1]
     A <- coefficients(regresion)[-1]
-    adjMob <- predict(regresion)
+    fittedFMMvalues <- predict(regresion)
 
     # Residual sum of squares
-    SSE <- ifelse(sum(A < 0, na.rm = TRUE) > 0, Inf, sum((adjMob-vData)^2))
+    SSE <- ifelse(sum(A < 0, na.rm = TRUE) > 0, Inf, sum((fittedFMMvalues-vData)^2))
 
     names(A) <- paste("A", 1:length(A), sep="")
 
@@ -141,7 +138,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
       omega = omega,
       timePoints = timePoints,
       summarizedData = vData,
-      fittedValues = adjMob,
+      fittedValues = fittedFMMvalues,
       SSE = SSE,
       R2 = PVj(vData, timePoints, alpha, beta, omega),
       nIter = i
@@ -180,10 +177,10 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   A <- coefficients(regresion)[-1]
 
   # Fitted values
-  adjMob <- predict(regresion)
+  fittedFMMvalues <- predict(regresion)
 
   # Residual sum of squares
-  SSE <- sum((adjMob-vData)^2)
+  SSE <- sum((fittedFMMvalues-vData)^2)
 
   names(A) <- paste("A", 1:length(A), sep = "")
 
@@ -198,7 +195,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     omega = omega,
     timePoints = timePoints,
     summarizedData = vData,
-    fittedValues= adjMob,
+    fittedValues= fittedFMMvalues,
     SSE = SSE,
     R2 = PVj(vData, timePoints, alpha, beta, omega),
     nIter = nIter
@@ -311,8 +308,8 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
   }
 
   names(parFinal) <- c("M", "A", "alpha", "beta", "omega")
-  adjMob <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] + 2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
-  SSE <- sum((adjMob-vData)^2)
+  fittedFMMvalues <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] + 2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
+  SSE <- sum((fittedFMMvalues-vData)^2)
 
   # alpha and beta between 0 and 2pi
   parFinal[3] <- parFinal[3]%%(2*pi)
@@ -359,8 +356,8 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
   names(parFinal) <- c("M","A","alpha","beta","omega")
 
   # Returns an object of class FMM
-  adjMob <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] + 2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
-  SSE <- sum((adjMob-vData)^2)
+  fittedFMMvalues <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] + 2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
+  SSE <- sum((fittedFMMvalues-vData)^2)
 
   outMobius <- FMM(
     M = parFinal["M"],
@@ -370,7 +367,7 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
     omega = parFinal[5],
     timePoints = timePoints,
     summarizedData = vData,
-    fittedValues = adjMob,
+    fittedValues = fittedFMMvalues,
     SSE = SSE,
     R2 = 0,
     nIter = 0
@@ -452,14 +449,12 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
 
   # showProgress
   if(showProgress){
-    marcasTotales <- 50
-    granoInforme <- 2
-    cat("|")
-    for(m in 1:marcasTotales) cat("-")
-    cat("|\n")
-    cat("|")
-    porcentajeCompletado <- 0.00001
-    porcentajeAntes <- porcentajeCompletado
+    totalMarks <- 50
+    partialMarkLength <- 2
+    progressHeader<-paste(c("|",rep("-",totalMarks),"|\n|"), collapse ="")
+    cat(progressHeader)
+    completedPercentage <- 0.00001
+    previousPercentage <- completedPercentage
   }
 
   # omega blocks
@@ -468,12 +463,12 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
   # Object initialization
   predichosBloque <- list()
   ajusteBloque <- list()
-  prevAdjMob <- NULL
+  prevFittedFMMvalues <- NULL
 
   for(i in 1:numBlocks){
     predichosBloque[[i]] <- rep(0,n)
   }
-
+  stopCriteria<-"Stopped by reaching maximum iterations ("
   # Backfitting algorithm: iteration
   for(i in 1:maxiter){
 
@@ -514,111 +509,74 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
 
         # showProgress
         if(showProgress){
-          porcentajeCompletado <- porcentajeCompletado + (100*numComponents)/(nback*maxiter)
-          if(ceiling(porcentajeAntes) < floor(porcentajeCompletado)){
-            numMarcas <- sum((seq(ceiling(porcentajeAntes),floor(porcentajeCompletado),by=1)%%granoInforme == 0))
-          } else {
-            numMarcas <- 0
-          }
-          if (numMarcas > 0) {
-            for(m in 1:numMarcas) cat("=")
-            porcentajeAntes <- porcentajeCompletado
+          completedPercentage <- completedPercentage + 100/(nback*maxiter)
+          if(ceiling(previousPercentage) < floor(completedPercentage)){
+            progressDone <- paste(rep("=",sum((seq(ceiling(previousPercentage), floor(completedPercentage), by = 1)
+                                             %% partialMarkLength == 0))), collapse = "")
+            cat(progressDone)
+            previousPercentage <- completedPercentage
           }
         }
     }
 
     # Check stop criterion
     # Fitted values as sum of all components
-    adjMob <- rep(0,n)
+    fittedFMMvalues <- rep(0,n)
     for(j in 1:numBlocks){
-      adjMob <- adjMob + predichosBloque[[j]]
+      fittedFMMvalues <- fittedFMMvalues + predichosBloque[[j]]
     }
-    if(!is.null(prevAdjMob)){
 
-      if(PV(vData,prevAdjMob) > PV(vData,adjMob)){
-        ajusteBloque <- ajusteBloqueAnt
-        adjMob <- prevAdjMob
+    if(!is.null(prevFittedFMMvalues)){
+      if(PV(vData, prevFittedFMMvalues) > PV(vData, fittedFMMvalues)){
+        fittedFMMPerComponent <- previousFittedFMMPerComponent
+        fittedFMMvalues <- prevFittedFMMvalues
+        stopCriteria<-"Stopped by reaching maximum R2 ("
         break
       }
-      if(stopFunction(vData,adjMob,prevAdjMob)){
+      if(stopFunction(vData, fittedFMMvalues, prevFittedFMMvalues)){
+        stopCriteria<-"Stopped by the stopFunction ("
         break
       }
     }
-    prevAdjMob <- adjMob
+
+    prevFittedFMMvalues <- fittedFMMvalues
     ajusteBloqueAnt <- ajusteBloque
   }
   nIter <- i
 
   # showProgress
   if(showProgress){
-    if(porcentajeCompletado < 100){
-      porcentajeCompletado <- 100
-      if(ceiling(porcentajeAntes) < floor(porcentajeCompletado)){
-        numMarcas <- sum((seq(ceiling(porcentajeAntes),floor(porcentajeCompletado),by=1)%%granoInforme == 0))
-      } else {
-        numMarcas <- 0
-      }
-      if (numMarcas > 0) {
-        for(m in 1:numMarcas) cat("=")
-        porcentajeAntes <- porcentajeCompletado
-      }
-    }
-    cat("|\n")
-    if(i == maxiter){
-      if(i == 1){
-        cat("Stopped by reaching maximum iterations (",i ,"iteration )","\n")
-      } else {
-        cat("Stopped by reaching maximum iterations (",i ,"iterations )","\n")
-      }
-    } else {
-      if(i == 1){
-        cat("Stopped by the stopFunction (",i ,"iteration )","\n")
-      } else {
-        cat("Stopped by the stopFunction (",i ,"iterations )","\n")
+    if(completedPercentage < 100){
+      completedPercentage <- 100
+      nMarks <- ifelse(ceiling(previousPercentage) < floor(completedPercentage),
+                       sum((seq(ceiling(previousPercentage),
+                                floor(completedPercentage), by = 1) %% partialMarkLength == 0)),
+                       0)
+      if (nMarks > 0) {
+        cat(paste(rep("=",nMarks), collapse = ""))
+        previousPercentage <- completedPercentage
       }
     }
+    cat("|\n", stopCriteria, nIter ,"iteration(s) )","\n")
   }
 
   # alpha, beta y omega estimates
-  alpha <- c()
-  beta <- c()
-  omega <- c()
-  for(j in 1:numBlocks){
-    alpha <- c(alpha,getAlpha(ajusteBloque[[j]]))
-    beta <- c(beta,getBeta(ajusteBloque[[j]]))
-    omega <- c(omega,getOmega(ajusteBloque[[j]]))
-  }
-
-  # beta restrictions: calculate angular mean of beta parameters
-  # the nearest betas are chosen
-  elegidos <- rep(0,length(betaRestrictions))
-  vCompleto <- 1:length(betaRestrictions)
-  for(indRes in unique(betaRestrictions)){
-    numComponents <- sum(betaRestrictions == indRes)
-    primero <- vCompleto[elegidos == 0][1]
-    distanciaAbs <- abs(beta-beta[primero])
-    distanciaAbs[elegidos == 1] <- Inf
-    implicados <- order(distanciaAbs)[1:numComponents]
-    elegidos[implicados] <- 1
-    beta[implicados] <- angularmean(beta[implicados])%%(2*pi)
-  }
+  alpha <- unlist(lapply(fittedFMMPerComponent, getAlpha))
+  beta <- unlist(lapply(fittedFMMPerComponent, getBeta))
+  omega <- unlist(lapply(fittedFMMPerComponent, getOmega))
 
   # A and M estimates are recalculated by linear regression
-  cos.phi <- list()
-  for(j in 1:nback){
-    cos.phi[[j]] <- cos(beta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
-  }
-  M <- matrix(unlist(cos.phi),ncol=nback)
-  regresion <- lm(vData ~ M)
+  cosPhi <- calculateCosPhi(alpha = alpha, beta = beta, omega = omega, timePoints = timePoints)
+  regresion <- lm(vData ~ cosPhi)
   M <- coefficients(regresion)[1]
   A <- coefficients(regresion)[-1]
 
   # Fitted values
-  adjMob <- predict(regresion)
+  fittedFMMvalues <- predict(regresion)
 
   # Residual sum of squares
-  SSE <- sum((adjMob-vData)^2)
-  names(A) <- paste("A", 1:length(A),sep="")
+  SSE <- sum((fittedFMMvalues - vData)^2)
+  names(A) <- paste("A", 1:length(A), sep = "")
 
   # Returns an object of class FMM
   outMobius <- FMM(
@@ -629,7 +587,7 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
     omega = omega,
     timePoints = timePoints,
     summarizedData = vData,
-    fittedValues = adjMob,
+    fittedValues = fittedFMMvalues,
     SSE = SSE,
     R2 = PVj(vData, timePoints, alpha, beta, omega),
     nIter = nIter

@@ -227,9 +227,12 @@ calculateCosPhi <- function(alpha, beta, omega, timePoints){
   calculateSingleCosPhi <- function(alpha, beta, omega){
     return(cos(beta + 2*atan(omega*tan((timePoints - alpha)/2))))
   }
-
   return(mapply(FUN=calculateSingleCosPhi, alpha=alpha, beta=beta, omega=omega))
 }
+
+
+
+
 
 ################################################################################
 # Internal function: return parallelized apply function depending on the OS.
