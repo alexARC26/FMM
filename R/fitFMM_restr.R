@@ -109,7 +109,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
       betaIndex <- betaIndexVector[markedBetas == 0][1]
       distance <- abs(restBeta - restBeta[betaIndex])
       distance[markedBetas == 1] <- Inf
-      nearestBetasIndex <- order(distanciaAbs)[1:numComponents]
+      nearestBetasIndex <- order(distance)[1:numComponents]
       markedBetas[nearestBetasIndex] <- 1
       restBeta[nearestBetasIndex] <- angularmean(restBeta[nearestBetasIndex])%%(2*pi)
     }
