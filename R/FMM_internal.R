@@ -44,7 +44,7 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
                  covMatrix[1,2]*covMatrix[2,3])/denominator
   mParameter <- mean(vData) - cosCoeff*mean(costStar) - sinCoeff*mean(sentstar)
 
-  phiEst <- atan2(-sinCoeff, cosCoeff)   # acrophase (phi)
+  phiEst <- atan2(-sinCoeff, cosCoeff)
   aParameter <- sqrt(cosCoeff^2 + sinCoeff^2)
   betaParameter <- (phiEst+alphaParameter)%%(2*pi)
 
@@ -219,15 +219,27 @@ angularmean <- function(angles){
   return(a.mean)
 }
 
+################################################################################
+# Internal function: to replicate a grid and return a list with replications.
+# Arguments:
+#   angles: grid to replicate.
+#   nback: times the grid is going to be replicated
+################################################################################
 replicateGrid <- function(grid, nback){
   return(replicate(n = nback, grid, simplify = FALSE))
 }
 
+################################################################################
+# Internal function: to calculate cosine term of FMM model.
+# Arguments:
+#   alpha, beta, omega: parameters
+#   timePoints: time poinst where FMM model is computed
+################################################################################
 calculateCosPhi <- function(alpha, beta, omega, timePoints){
   calculateSingleCosPhi <- function(alpha, beta, omega){
     return(cos(beta + 2*atan(omega*tan((timePoints - alpha)/2))))
   }
-  return(mapply(FUN=calculateSingleCosPhi, alpha=alpha, beta=beta, omega=omega))
+  return(mapply(FUN = calculateSingleCosPhi, alpha = alpha, beta = beta, omega = omega))
 }
 
 ################################################################################
@@ -278,6 +290,128 @@ getApply <- function(parallelize = FALSE, nCores = min(12, parallel::detectCores
 #                      RESTRICTED FMM INTERNAL FUNCTIONS                       #
 ################################################################################
 
+########################################################################################################
+# Internal function: to fit monocomponent FMM models with fixed omega.
+# Arguments:
+#   vData: data to be fitted an FMM model.
+#   omega: value of the omega parameter.
+#   timePoints: one single period time points.
+#   lengthAlphaGrid: precision of the grid of alpha parameter.
+#   alphaGrid: grid of alpha parameter.
+#   numReps: number of times the alpha-omega grid search is repeated.
+# Returns an object of class FMM.
+########################################################################################################
+fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
+                            lengthAlphaGrid = 48, alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
+                            numReps = 3){
+  n <- length(vData)
+
+  ## Step 1: initial values of M, A, alpha, beta and omega
+  # alpha and omega are fixed and cosinor model is used to calculate the rest of the parameters.
+  # step1FMM function is used to make this estimate
+  grid <- expand.grid(alphaGrid, omega)
+  step1 <- t(apply(grid, 1, step1FMM, vData = vData, timePoints = timePoints))
+  colnames(step1) <- c("M","A","alpha","beta","omega","RSS")
+
+  # We find the optimal initial parameters,
+  # minimizing Residual Sum of Squared with several stability conditions.
+  # We use bestStep1 internal function
+  bestPar <- bestStep1(vData,step1)
+
+  # When the fixed omega is so extreme that the fitting is no possible,
+  # the null fitted model is returned.
+  if(is.null(bestPar)){
+    outMobius <- FMM(
+      M = 0,
+      A = 0,
+      alpha = 0,
+      beta = 0,
+      omega = omega,
+      timePoints = timePoints,
+      summarizedData = vData,
+      fittedValues = rep(0,length(vData)),
+      SSE = sum(vData^2),
+      R2 = PV(vData, rep(0,length(vData))),
+      nIter = 0
+    )
+    return(outMobius)
+  }
+
+  ## Step 2: Nelder-Mead optimization. 'step2FMM_restr' function is used.
+  if(!is.infinite(step2FMM_restr(bestPar[1:4], vData = vData, timePoints = timePoints, omega = omega))){
+    nelderMead <- optim(par = bestPar[1:4], fn = step2FMM_restr, vData = vData, timePoints = timePoints, omega = omega)
+    parFinal <- c(nelderMead$par, omega)
+  } else {
+    parFinal <- c(bestPar[1:4],omega)
+  }
+
+  names(parFinal) <- c("M", "A", "alpha", "beta", "omega")
+  fittedFMMvalues <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] + 2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
+  SSE <- sum((fittedFMMvalues-vData)^2)
+
+  # alpha and beta between 0 and 2pi
+  parFinal[3] <- parFinal[3]%%(2*pi)
+  parFinal[4] <- parFinal[4]%%(2*pi)
+
+  # the grid search is repeated numReps
+  numReps <- numReps - 1
+  while(numReps > 0){
+    # new grid for alpha between 0 and 2pi
+    nAlphaGrid <- length(alphaGrid)
+    amplitudeAlphaGrid <- 1.5*mean(diff(alphaGrid))
+    alphaGrid <- seq(parFinal[3]-amplitudeAlphaGrid,parFinal[3]+amplitudeAlphaGrid,length.out = nAlphaGrid)
+    alphaGrid <- alphaGrid%%(2*pi)
+
+    ## Step 1: initial parameters
+    grid <- as.matrix(expand.grid(alphaGrid,omega))
+    step1 <- t(apply(grid,1,step1FMM, vData=vData, timePoints=timePoints))
+    colnames(step1) <- c("M","A","alpha","beta","omega","RSS")
+    antBestPar <- bestPar
+    bestPar <- bestStep1(vData,step1)
+
+    # None satisfies the conditions
+    if(is.null(bestPar)){
+      bestPar <- antBestPar
+      numReps <- 0
+      warning("FMM model may be no appropiate")
+    }
+
+    ## Step 2: Nelder-Mead optimization
+    if(!is.infinite(step2FMM_restr(bestPar[1:4],vData = vData, timePoints = timePoints, omega = omega))){
+      nelderMead <- optim(par = bestPar[1:4], fn = step2FMM_restr, vData = vData, timePoints = timePoints, omega = omega)
+      parFinal <- c(nelderMead$par,omega)
+    } else {
+      parFinal <- c(bestPar[1:4],omega)
+    }
+
+    # alpha and beta between 0 and 2pi
+    parFinal[3] <- parFinal[3]%%(2*pi)
+    parFinal[4] <- parFinal[4]%%(2*pi)
+
+    numReps <- numReps - 1
+  }
+  names(parFinal) <- c("M","A","alpha","beta","omega")
+
+  # Returns an object of class FMM
+  fittedFMMvalues <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] + 2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
+  SSE <- sum((fittedFMMvalues-vData)^2)
+
+  outMobius <- FMM(
+    M = parFinal["M"],
+    A = parFinal["A"],
+    alpha = parFinal[3],
+    beta = parFinal[4],
+    omega = parFinal[5],
+    timePoints = timePoints,
+    summarizedData = vData,
+    fittedValues = fittedFMMvalues,
+    SSE = SSE,
+    R2 = 0,
+    nIter = 0
+  )
+  return(outMobius)
+}
+
 ################################################################################
 # Internal function: to optimize omega.
 # It is used in the extra optimization step of omega,
@@ -326,14 +460,14 @@ stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
   }
 }
 
-###############################################################
+################################################################################
 # Internal function: second step of FMM fitting process with fixed omega
 # Arguments:
 #   param: M, A, alpha, beta initial parameter estimations
 #   vData: data to be fitted an FMM model.
 #   timePoints: one single period time points.
 #   omega: fixed value of omega.
-###############################################################
+################################################################################
 step2FMM_restr <- function(parameters, vData, timePoints, omega){
 
   n <- length(timePoints)

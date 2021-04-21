@@ -181,7 +181,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                                   maxiter = maxiter, stopFunction = stopFunction,
                                   lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                   alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
-                                  omegaGrid = omegaGrid, numReps = numReps, parallelize = parallelize)
+                                  omegaGrid = omegaGrid, numReps = numReps)
       #### Approximated solution
       } else {
         fittedFMM <- fitFMM_restr_omega_beta(vData = summarizedData, timePoints = timePoints, nback = nback,
@@ -190,8 +190,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                                              maxiter = maxiter, stopFunction = alwaysFalse,
                                              lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                              alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
-                                             omegaGrid = omegaGrid, numReps = numReps, showProgress = showProgress,
-                                             parallelize = parallelize)
+                                             omegaGrid = omegaGrid, numReps = numReps, showProgress = showProgress)
       }
     }
   }
