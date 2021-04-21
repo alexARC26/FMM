@@ -230,10 +230,6 @@ calculateCosPhi <- function(alpha, beta, omega, timePoints){
   return(mapply(FUN=calculateSingleCosPhi, alpha=alpha, beta=beta, omega=omega))
 }
 
-
-
-
-
 ################################################################################
 # Internal function: return parallelized apply function depending on the OS.
 # Returns function to be used.
@@ -277,4 +273,96 @@ getApply <- function(parallelize = FALSE, nCores = min(12, parallel::detectCores
 
   return(list(usedApply, parallelCluster))
 }
+
+################################################################################
+#                      RESTRICTED FMM INTERNAL FUNCTIONS                       #
+################################################################################
+
+################################################################################
+# Internal function: to optimize omega.
+# It is used in the extra optimization step of omega,
+# within fitFMM_restr function.
+# Arguments:
+#   uniqueOmegas: grid of omega parameters.
+#   indOmegas: omega's constraint vector.
+#   objFMM: FMM object to refine the omega fitting.
+#   omegaMax: max value for omega.
+# Returns the residual sum of squares or
+# 'Inf' when the integrity conditions are not met.
+################################################################################
+stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
+
+  timePoints <- getTimePoints(objFMM)
+  n <- length(timePoints)
+  M <- getM(objFMM)
+  A <- getA(objFMM)
+  alpha <- getAlpha(objFMM)
+  beta <- getBeta(objFMM)
+  omega <- uniqueOmegas[indOmegas]
+  m <- length(alpha)
+  vData <- getSummarizedData(objFMM)
+
+  # FMM fitting
+  wave <- list()
+  for(j in 1:m){
+    wave[[j]] <- A[j]*cos(beta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
+  }
+  ffMob<-rep(M,n)
+  for(j in 1:length(wave)){
+    ffMob <- ffMob+wave[[j]]
+  }
+
+  # Residual sum of squares
+  RSS <- sum((ffMob - vData)^2)/n
+  sigma <- sqrt(RSS*n/(n-5))
+
+  # Other integrity conditions that must be met
+  rest1 <- all(uniqueOmegas <= omegaMax)
+  rest2 <- all(uniqueOmegas >= 0)
+  if(rest1 & rest2){
+    return(RSS)
+  }else{
+    return(Inf)
+  }
+}
+
+###############################################################
+# Internal function: second step of FMM fitting process with fixed omega
+# Arguments:
+#   param: M, A, alpha, beta initial parameter estimations
+#   vData: data to be fitted an FMM model.
+#   timePoints: one single period time points.
+#   omega: fixed value of omega.
+###############################################################
+step2FMM_restr <- function(parameters, vData, timePoints, omega){
+
+  n <- length(timePoints)
+  # FMM model and residual sum of squares
+  modelFMM <- parameters[1] + parameters[2] *
+    cos(parameters[4]+2*atan2(omega*sin((timePoints - parameters[3])/2),
+                              cos((timePoints - parameters[3])/2)))
+  residualSS <- sum((modelFMM - vData)^2)/n
+  sigma <- sqrt(residualSS*n/(n - 5))
+
+  # When amplitude condition is valid, it returns RSS
+  # else it returns infinite.
+  amplitudeUpperBound <- parameters[1] + parameters[2]
+  amplitudeLowerBound <- parameters[1] - parameters[2]
+  rest1 <- amplitudeUpperBound <= max(vData) + 1.96*sigma
+  rest2 <- amplitudeLowerBound >= min(vData) - 1.96*sigma
+
+  # Other integrity conditions that must be met
+  rest3 <- parameters[2] > 0 #A > 0
+  if(rest1 & rest2 & rest3){
+    return(residualSS)
+  }else{
+    return(Inf)
+  }
+}
+
+
+
+
+
+
 

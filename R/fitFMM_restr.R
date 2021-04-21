@@ -52,13 +52,11 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   gridOmegas <- expand.grid(listOmegas)
   omegasIter <- gridOmegas[,omegaRestrictions]
 
-
   # External loop on the omega grid, setting its value
   objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
 
     omegas <- as.numeric(omegas)
     # Object initialization
-    ### fittedValuesPerComponent <- replicate(nback, rep(0,n), simplify = FALSE)
     fittedValuesPerComponent <- matrix(0, ncol = nback, nrow = n)
     fittedFMMPerComponent <- list()
     prevFittedFMMvalues <- NULL
@@ -71,8 +69,8 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
         backFittingData <- vData - apply(as.matrix(fittedValuesPerComponent[,-j]), 1, sum)
         # component j fitting using fitFMM_unit_restr function
         fittedFMMPerComponent[[j]] <- fitFMM_unit_restr(backFittingData, omegas[j], timePoints = timePoints,
-                                                   lengthAlphaGrid = lengthAlphaGrid, alphaGrid = alphaGrid[[j]],
-                                                   numReps = numReps)
+                                                        lengthAlphaGrid = lengthAlphaGrid, alphaGrid = alphaGrid[[j]],
+                                                        numReps = numReps)
         fittedValuesPerComponent[,j] <- fittedFMMPerComponent[[j]]@fittedValues
       }
 
@@ -109,15 +107,15 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     for(indRes in unique(betaRestrictions)){
       numComponents <- sum(betaRestrictions == indRes)
       betaIndex <- betaIndexVector[markedBetas == 0][1]
-      distanciaAbs <- abs(restBeta - restBeta[betaIndex])
-      distanciaAbs[markedBetas == 1] <- Inf
+      distance <- abs(restBeta - restBeta[betaIndex])
+      distance[markedBetas == 1] <- Inf
       nearestBetasIndex <- order(distanciaAbs)[1:numComponents]
       markedBetas[nearestBetasIndex] <- 1
       restBeta[nearestBetasIndex] <- angularmean(restBeta[nearestBetasIndex])%%(2*pi)
     }
 
     # A and M estimates are recalculated by linear regression
-    cosPhi <- calculateCosPhi(alpha=alpha, beta=beta, omega=omega, timePoints=timePoints)
+    cosPhi <- calculateCosPhi(alpha=alpha, beta=restBeta, omega=omega, timePoints=timePoints)
     regresion <- lm(vData ~ cosPhi)
 
     M <- coefficients(regresion)[1]
@@ -202,54 +200,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   )
 
   return(outMobiusFinal)
-}
 
-###############################################################
-# Internal function: to optimize omega.
-# It is used in the extra optimization step of omega,
-# within fitFMM_restr function.
-# Arguments:
-#   uniqueOmegas: grid of omega parameters.
-#   indOmegas: omega's constraint vector.
-#   objFMM: FMM object to refine the omega fitting.
-#   omegaMax: max value for omega.
-# Returns the residual sum of squares or
-# 'Inf' when the integrity conditions are not met.
-###############################################################
-stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
-
-  timePoints <- getTimePoints(objFMM)
-  n <- length(timePoints)
-  M <- getM(objFMM)
-  A <- getA(objFMM)
-  alpha <- getAlpha(objFMM)
-  beta <- getBeta(objFMM)
-  omega <- uniqueOmegas[indOmegas]
-  m <- length(alpha)
-  vData <- getSummarizedData(objFMM)
-
-  # FMM fitting
-  wave <- list()
-  for(j in 1:m){
-    wave[[j]] <- A[j]*cos(beta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
-  }
-  ffMob<-rep(M,n)
-  for(j in 1:length(wave)){
-    ffMob <- ffMob+wave[[j]]
-  }
-
-  # Residual sum of squares
-  RSS<-sum((ffMob - vData)^2)/n
-  sigma <- sqrt(RSS*n/(n-5))
-
-  # Other integrity conditions that must be met
-  rest1 <- all(uniqueOmegas <= omegaMax)
-  rest2 <- all(uniqueOmegas >= 0)
-  if(rest1 & rest2){
-    return(RSS)
-  }else{
-    return(Inf)
-  }
 }
 
 ###############################################################
@@ -375,41 +326,6 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
   return(outMobius)
 }
 
-
-###############################################################
-# Internal function: second step of FMM fitting process with fixed omega
-# Arguments:
-#   param: M, A, alpha, beta initial parameter estimations
-#   vData: data to be fitted an FMM model.
-#   timePoints: one single period time points.
-#   omega: fixed value of omega.
-###############################################################
-step2FMM_restr <- function(parameters, vData, timePoints, omega){
-
-  n <- length(timePoints)
-  # FMM model and residual sum of squares
-  modelFMM <- parameters[1] + parameters[2] *
-    cos(parameters[4]+2*atan2(omega*sin((timePoints - parameters[3])/2),
-                              cos((timePoints - parameters[3])/2)))
-  residualSS <- sum((modelFMM - vData)^2)/n
-  sigma <- sqrt(residualSS*n/(n - 5))
-
-  # When amplitude condition is valid, it returns RSS
-  # else it returns infinite.
-  amplitudeUpperBound <- parameters[1] + parameters[2]
-  amplitudeLowerBound <- parameters[1] - parameters[2]
-  rest1 <- amplitudeUpperBound <= max(vData) + 1.96*sigma
-  rest2 <- amplitudeLowerBound >= min(vData) - 1.96*sigma
-
-  # Other integrity conditions that must be met
-  rest3 <- parameters[2] > 0 #A > 0
-  if(rest1 & rest2 & rest3){
-    return(residualSS)
-  }else{
-    return(Inf)
-  }
-}
-
 ###############################################################
 # Internal function: to fit restricted multicomponent FMM models.
 # Nested backfitting algorithm is used for fitting process.
@@ -461,13 +377,10 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
   numBlocks <- length(unique(omegaRestrictions))
 
   # Object initialization
-  predichosBloque <- list()
-  ajusteBloque <- list()
+  fittedValuesPerBlock <- matrix(0, ncol = numBlocks, nrow = n)
+  fittedFMMPerBlock <- list()
   prevFittedFMMvalues <- NULL
 
-  for(i in 1:numBlocks){
-    predichosBloque[[i]] <- rep(0,n)
-  }
   stopCriteria<-"Stopped by reaching maximum iterations ("
   # Backfitting algorithm: iteration
   for(i in 1:maxiter){
@@ -482,28 +395,19 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
 
         # data for block k: difference between vData and all other components fitted values
         # of other blocks
-        vDataAjuste <- vData
-        for(k in 1:numBlocks){
-          if(k != indBloque){
-            vDataAjuste <- vDataAjuste - predichosBloque[[k]]
-          }
-        }
+        backFittingData <- vData - apply(as.matrix(fittedValuesPerBlock[,-indBloque]), 1, sum)
 
-        if(numComponents > 1){
-          iteraciones <- min(numComponents + 1, 4)
-        } else {
-          iteraciones <- 1
-        }
+        iteraciones <- ifelse(numComponents > 1, min(numComponents + 1, 4), 1)
 
         # fitting of a block using fitFMM_restr function
-        ajusteBloque[[indBloque]] <- fitFMM_restr(vDataAjuste, timePoints = timePoints, nback = numComponents,
+        fittedFMMPerBlock[[indBloque]] <- fitFMM_restr(backFittingData, timePoints = timePoints, nback = numComponents,
                                                   betaRestrictions = betaRestrictions[componentes],
                                                   omegaRestrictions = rep(1,numComponents), maxiter = iteraciones,
                                                   lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                                   alphaGrid = alphaGrid, omegaMax = omegaMax, omegaGrid = omegaGrid,
                                                   numReps = numReps, parallelize = parallelize)
 
-        predichosBloque[[indBloque]] <- getFittedValues(ajusteBloque[[indBloque]])
+        fittedValuesPerBlock[,indBloque] <- getFittedValues(fittedFMMPerBlock[[indBloque]])
 
         indBloque <- indBloque + 1
 
@@ -521,26 +425,22 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
 
     # Check stop criterion
     # Fitted values as sum of all components
-    fittedFMMvalues <- rep(0,n)
-    for(j in 1:numBlocks){
-      fittedFMMvalues <- fittedFMMvalues + predichosBloque[[j]]
-    }
+    fittedFMMvalues <- apply(fittedValuesPerBlock, 1, sum)
 
     if(!is.null(prevFittedFMMvalues)){
       if(PV(vData, prevFittedFMMvalues) > PV(vData, fittedFMMvalues)){
-        fittedFMMPerComponent <- previousFittedFMMPerComponent
+        fittedFMMPerBlock <- prevFittedFMMPerBlock
         fittedFMMvalues <- prevFittedFMMvalues
-        stopCriteria<-"Stopped by reaching maximum R2 ("
+        stopCriteria <- "Stopped by reaching maximum R2 ("
         break
       }
       if(stopFunction(vData, fittedFMMvalues, prevFittedFMMvalues)){
-        stopCriteria<-"Stopped by the stopFunction ("
+        stopCriteria <- "Stopped by the stopFunction ("
         break
       }
     }
-
     prevFittedFMMvalues <- fittedFMMvalues
-    ajusteBloqueAnt <- ajusteBloque
+    prevFittedFMMPerBlock <- fittedFMMPerBlock
   }
   nIter <- i
 
@@ -557,22 +457,22 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
         previousPercentage <- completedPercentage
       }
     }
-    cat("|\n", stopCriteria, nIter ,"iteration(s) )","\n")
+    cat("|\n", stopCriteria, nIter, "iteration(s) )", "\n")
   }
 
   # alpha, beta y omega estimates
-  alpha <- unlist(lapply(fittedFMMPerComponent, getAlpha))
-  beta <- unlist(lapply(fittedFMMPerComponent, getBeta))
-  omega <- unlist(lapply(fittedFMMPerComponent, getOmega))
+  alpha <- unlist(lapply(fittedFMMPerBlock, getAlpha))
+  beta <- unlist(lapply(fittedFMMPerBlock, getBeta))
+  omega <- unlist(lapply(fittedFMMPerBlock, getOmega))
 
   # A and M estimates are recalculated by linear regression
   cosPhi <- calculateCosPhi(alpha = alpha, beta = beta, omega = omega, timePoints = timePoints)
-  regresion <- lm(vData ~ cosPhi)
-  M <- coefficients(regresion)[1]
-  A <- coefficients(regresion)[-1]
+  regression <- lm(vData ~ cosPhi)
+  M <- coefficients(regression)[1]
+  A <- coefficients(regression)[-1]
 
   # Fitted values
-  fittedFMMvalues <- predict(regresion)
+  fittedFMMvalues <- predict(regression)
 
   # Residual sum of squares
   SSE <- sum((fittedFMMvalues - vData)^2)
