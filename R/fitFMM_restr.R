@@ -38,7 +38,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                       alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
                       omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out = lengthOmegaGrid)),
-                      numReps = 3){
+                      numReps = 3, parallelize = FALSE){
 
   n <- length(vData)
   betaRestrictions <- sort(betaRestrictions)
@@ -52,19 +52,13 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   omegasIter <- gridOmegas[,omegaRestrictions]
 
   # External loop on the omega grid, setting its value
-  objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
-    backFittingRestr(vData = vData, timePoints = timePoints, omegas = omegas,
-                     alphaGrid = alphaGrid, numReps = numReps, nback = nback,
-                     n = n, maxiter = maxiter, betaRestrictions = betaRestrictions)
-  }
+  objectFMMList <- iterateOmegaGrid(vData = vData, omegasIter = omegasIter, betaRestrictions = betaRestrictions,
+                                    timePoints = timePoints, alphaGrid = alphaGrid, numReps = numReps,
+                                    nback = nback, maxiter = maxiter, parallelize = parallelize)
 
   # We keep the best solution
-  SSEs <- rep(NA,length(objectFMMList))
-  for(i in 1:length(SSEs)){
-    SSEs[i] <- getSSE(objectFMMList[[i]])
-  }
-  imin <- which.min(SSEs)
-  outMobius <- objectFMMList[[imin]]
+  SSElist <- lapply(objectFMMList, getSSE)
+  outMobius <- objectFMMList[[which.min(SSElist)]]
 
   # Extra optimization to allow omega's to move more freely.
   # The stepOmega function is used.
@@ -114,105 +108,6 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   return(outMobiusFinal)
 }
 
-
-#######################################################################################
-# Internal function: backfitting algorithm with fixed omegas.
-#######################################################################################
-backFittingRestr <- function(vData, omegas, nback, betaRestrictions,
-                             timePoints = seqTimes(length(vData)), lengthAlphaGrid = 48,
-                             alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid),
-                             numReps = 3, maxiter = nback, stopFunction = alwaysFalse){
-  n <- length(vData)
-  omegas <- as.numeric(omegas)
-  fittedValuesPerComponent <- matrix(0, ncol = nback, nrow = n)
-  fittedFMMPerComponent <- list()
-  prevFittedFMMvalues <- NULL
-
-  # Backfitting algorithm: iteration
-  for(i in 1:maxiter){
-    # Backfitting algorithm: component
-    for(j in 1:nback){
-      # data for component j: difference between vData and all other components fitted values
-      backFittingData <- vData - apply(as.matrix(fittedValuesPerComponent[,-j]), 1, sum)
-      # component j fitting using fitFMM_unit_restr function
-      fittedFMMPerComponent[[j]] <- fitFMM_unit_restr(backFittingData, omegas[j], timePoints = timePoints,
-                                                      lengthAlphaGrid = lengthAlphaGrid, alphaGrid = alphaGrid[[j]],
-                                                      numReps = numReps)
-      fittedValuesPerComponent[,j] <- fittedFMMPerComponent[[j]]@fittedValues
-    }
-
-    # Check stop criterion
-    # Fitted values as sum of all components
-    fittedFMMvalues <- apply(fittedValuesPerComponent, 1, sum)
-
-    if(!is.null(prevFittedFMMvalues)){
-
-      if(PV(vData, prevFittedFMMvalues) > PV(vData, fittedFMMvalues)){
-        fittedFMMPerComponent <- previousFittedFMMPerComponent
-        fittedFMMvalues <- prevFittedFMMvalues
-        break
-      }
-      if(stopFunction(vData, fittedFMMvalues, prevFittedFMMvalues)){
-        break
-      }
-    }
-
-    prevFittedFMMvalues <- fittedFMMvalues
-    previousFittedFMMPerComponent <- fittedFMMPerComponent
-  }
-
-  # alpha, beta y omega estimates
-  alpha <- unlist(lapply(fittedFMMPerComponent, getAlpha))
-  beta <- unlist(lapply(fittedFMMPerComponent, getBeta))
-  omega <- unlist(lapply(fittedFMMPerComponent, getOmega))
-
-  # beta restrictions: calculate angular mean of beta parameters
-  # the nearest betas are chosen
-  restBeta <- beta
-  markedBetas <- rep(0, length(betaRestrictions))
-  betaIndexVector <- 1:length(betaRestrictions)
-  for(indRes in unique(betaRestrictions)){
-    numComponents <- sum(betaRestrictions == indRes)
-    betaIndex <- betaIndexVector[markedBetas == 0][1]
-    distance <- abs(restBeta - restBeta[betaIndex])
-    distance[markedBetas == 1] <- Inf
-    nearestBetasIndex <- order(distance)[1:numComponents]
-    markedBetas[nearestBetasIndex] <- 1
-    restBeta[nearestBetasIndex] <- angularmean(restBeta[nearestBetasIndex])%%(2*pi)
-  }
-
-  # A and M estimates are recalculated by linear regression
-  cosPhi <- calculateCosPhi(alpha = alpha, beta = restBeta, omega = omega, timePoints = timePoints)
-  regresion <- lm(vData ~ cosPhi)
-
-  M <- coefficients(regresion)[1]
-  A <- coefficients(regresion)[-1]
-  fittedFMMvalues <- predict(regresion)
-
-  # Residual sum of squares
-  SSE <- ifelse(sum(A < 0, na.rm = TRUE) > 0, Inf, sum((fittedFMMvalues-vData)^2))
-
-  names(A) <- paste("A", 1:length(A), sep="")
-
-  # Returns an object of class FMM
-  outMobius <- FMM(
-    M = M,
-    A = A,
-    alpha = alpha,
-    beta = restBeta,
-    omega = omega,
-    timePoints = timePoints,
-    summarizedData = vData,
-    fittedValues = fittedFMMvalues,
-    SSE = SSE,
-    R2 = PVj(vData, timePoints, alpha, beta, omega),
-    nIter = i
-  )
-  #  outMobius <- c(M, A, alpha, restBeta, omega, SSE)
-
-  return(outMobius)
-}
-
 ###############################################################
 # Internal function: to fit restricted multicomponent FMM models.
 # Nested backfitting algorithm is used for fitting process.
@@ -239,7 +134,7 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
                             stopFunction = alwaysFalse, lengthAlphaGrid = 48, lengthOmegaGrid = 24,
                             alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
                             omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out=lengthOmegaGrid)),
-                            numReps = 3, showProgress = TRUE){
+                            numReps = 3, showProgress = TRUE, parallelize = FALSE){
   n <- length(vData)
 
   if(is.list(alphaGrid)){
@@ -291,7 +186,7 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
                                                   omegaRestrictions = rep(1,numComponents), maxiter = iteraciones,
                                                   lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                                   alphaGrid = alphaGrid, omegaMax = omegaMax, omegaGrid = omegaGrid,
-                                                  numReps = numReps)
+                                                  numReps = numReps, parallelize = parallelize)
         fittedValuesPerBlock[,indBloque] <- getFittedValues(fittedFMMPerBlock[[indBloque]])
 
         indBloque <- indBloque + 1

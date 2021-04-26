@@ -12,6 +12,8 @@
 \alias{bestStep1}
 \alias{step2FMM}
 \alias{step2FMM_restr}
+\alias{backFittingRestr}
+\alias{iterateOmegaGrid}
 \alias{stepOmega}
 \alias{R2}
 \alias{alwaysFalse}
@@ -44,9 +46,11 @@ Additional functions: The functions \code{PV()}, \code{PVj()}, \code{angularmean
 \value{
 Depending on the returned value:
 \itemize{
-   \item{\code{fitFMM_unit()}, \code{fitFMM_back()}, \code{refineFMM()}, \code{fitFMM_unit_restr()},
-         \code{fitFMM_restr_beta()}, \code{fitFMM_restr_omegaBeta()} and \code{fitFMM_restr()}
+   \item{\code{fitFMM_unit()}, \code{fitFMM_back()}, \code{fitFMM_unit_restr()},
+         \code{fitFMM_restr_omegaBeta()}, \code{backFittingRestr()} and \code{fitFMM_restr()}
          return an S4 object of class \code{'FMM'}.
+   }
+   \item{\code{iterateOmegaGrid() returns a list with S4 objects of class FMM}
    }
    \item{\code{step1FMM()} and \code{bestStep1()} return a numerical vector with the initial parameter estimations
          and residual sum of squares, respectively. \code{PVj()} returns a vector with the percentage of variability

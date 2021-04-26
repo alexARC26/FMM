@@ -34,7 +34,7 @@
 #'
 #' @param showTime \code{TRUE} to display execution time on the console.
 #'
-#' @param parallelize \code{TRUE} to use parallelized procedure to fit restricted FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to 12, or if the machine has less, the number of cores - 1.
+#' @param parallelize \code{TRUE} to use parallelized procedure to fit FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to 12, or if the machine has less, the number of cores - 1.
 #'
 #' @param restrExactSolution \code{FALSE} to use an aproximated algorithm to fit the model (default). If \code{TRUE} is specified, an nearly exact solution is computed.
 #'
@@ -181,7 +181,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                                   maxiter = maxiter, stopFunction = stopFunction,
                                   lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                   alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
-                                  omegaGrid = omegaGrid, numReps = numReps)
+                                  omegaGrid = omegaGrid, numReps = numReps, parallelize = parallelize)
       #### Approximated solution
       } else {
         fittedFMM <- fitFMM_restr_omega_beta(vData = summarizedData, timePoints = timePoints, nback = nback,
@@ -190,7 +190,8 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                                              maxiter = maxiter, stopFunction = alwaysFalse,
                                              lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                              alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
-                                             omegaGrid = omegaGrid, numReps = numReps, showProgress = showProgress)
+                                             omegaGrid = omegaGrid, numReps = numReps, showProgress = showProgress,
+                                             parallelize = parallelize)
       }
     }
   }
