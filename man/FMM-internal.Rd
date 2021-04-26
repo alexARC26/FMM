@@ -50,7 +50,7 @@ Depending on the returned value:
          \code{fitFMM_restr_omegaBeta()}, \code{backFittingRestr()} and \code{fitFMM_restr()}
          return an S4 object of class \code{'FMM'}.
    }
-   \item{\code{iterateOmegaGrid() returns a list with S4 objects of class FMM}
+   \item{\code{iterateOmegaGrid()} returns a list with S4 objects of class FMM.
    }
    \item{\code{step1FMM()} and \code{bestStep1()} return a numerical vector with the initial parameter estimations
          and residual sum of squares, respectively. \code{PVj()} returns a vector with the percentage of variability
