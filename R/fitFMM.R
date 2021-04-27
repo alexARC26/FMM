@@ -16,7 +16,7 @@
 #' @param nback Number of FMM components to be fitted. Its default value is 1.
 #'
 #' @param betaOmegaRestrictions An integer vector of length \code{nback} indicating which FMM waves are constrained to have equal \code{beta} and \code{omega} parameters. For example, \code{c(1,1,1,2,2)} indicates that \code{beta1=beta2=beta3} and
-#'   \code{beta4=beta5} and \code{omega1=omega2=omega3} and \code{omega4=omega5}. In brief, some waves are restricted to have the same shape. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on shape parameters (\code{beta} and \code{omega}).
+#'   \code{beta4=beta5} as well as \code{omega1=omega2=omega3} and \code{omega4=omega5}. In brief, some waves are restricted to have the same shape. Its default value is the sequence \code{1:nback} to fit the FMM model without restrictions on shape parameters (\code{beta} and \code{omega}).
 #'
 #' @param maxiter Maximum number of iterations for the backfitting algorithm. By default, it is set at \code{nback}.
 #'

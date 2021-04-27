@@ -1,5 +1,5 @@
 ################################################################################
-#                      RESTRICTED FMM INTERNAL FUNCTIONS
+# Auxiliary functions for the fit of restricted FMM models
 # Functions:
 #   iterateOmegaGrid:   iterate fitting on omegasIter grid (FMM_unit_restr models
 #                       with fixed omega)
@@ -191,8 +191,8 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
   # We use bestStep1 internal function
   bestPar <- bestStep1(vData,step1)
 
-  # When the fixed omega is so extreme that the fitting is no possible,
-  # the null fitted model is returned.
+  # When the value of the fixed omega is too extreme, making the fit impossible,
+  # a null fitted model is returned.
   if(is.null(bestPar)){
     outMobius <- FMM(
       M = 0,
@@ -291,16 +291,13 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
 }
 
 ################################################################################
-# Internal function: to optimize omega.
-# It is used in the extra optimization step of omega,
+# Internal function: to optimize omega in the extra optimization step of omega,
 # within fitFMM_restr function.
 # Arguments:
 #   uniqueOmegas: grid of omega parameters.
-#   indOmegas: omega's constraint vector.
+#   indOmegas: omegas' constraint vector.
 #   objFMM: FMM object to refine the omega fitting.
 #   omegaMax: max value for omega.
-# Returns the residual sum of squares or
-# 'Inf' when the integrity conditions are not met.
 ################################################################################
 stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
 
@@ -322,7 +319,8 @@ stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
   fittedValues <- apply(fittedValuesPerComponent, 1, sum) + M
   RSS <- sum((fittedValues - vData)^2)
 
-  # Other integrity conditions that must be met
+  # If the integrity conditions are valid, it returns RSS
+  # else it returns infinite.
   rest1 <- all(uniqueOmegas <= omegaMax)
   rest2 <- all(uniqueOmegas >= 0)
   if(rest1 & rest2){
@@ -333,9 +331,9 @@ stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
 }
 
 ################################################################################
-# Internal function: second step of FMM fitting process with fixed omega
+# Internal function: second step of FMM fitting process with fixed omega.
 # Arguments:
-#   param: M, A, alpha, beta initial parameter estimations
+#   param: M, A, alpha, beta initial parameter estimations.
 #   vData: data to be fitted an FMM model.
 #   timePoints: one single period time points.
 #   omega: fixed value of omega.
