@@ -3,7 +3,7 @@
 # Functions:
 #   iterateOmegaGrid:   iterate fitting on omegasIter grid (FMM_unit_restr models
 #                       with fixed omega)
-#   backFittingRestr:   backfitting algorithm with fixed omegas.
+#   backfittingRestr:   backfitting algorithm with fixed omegas.
 #   fitFMM_unit_restr:  to fit monocomponent FMM models with fixed omega.
 #   stepOmega:          to optimize omega.
 #   step2FMM_restr:     second step of FMM fitting process with fixed omega
@@ -30,9 +30,9 @@ iterateOmegaGrid <- function(vData, omegasIter, betaRestrictions, timePoints = s
                              lengthAlphaGrid = 48, alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid),
                              numReps = numReps, nback = nback, maxiter = maxiter, parallelize = FALSE){
   if(parallelize){
-    # cores for parallelization registered: 'foreach' is used
+    # cores for parallelized procedure registered: 'foreach' is used
     objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
-      backFittingRestr(vData = vData, timePoints = timePoints, omegas = omegas,
+      backfittingRestr(vData = vData, timePoints = timePoints, omegas = omegas,
                        lengthAlphaGrid = lengthAlphaGrid, alphaGrid = alphaGrid, numReps = numReps,
                        nback = nback, maxiter = maxiter, betaRestrictions = betaRestrictions)
     }
@@ -42,7 +42,7 @@ iterateOmegaGrid <- function(vData, omegasIter, betaRestrictions, timePoints = s
     for(i in 1:length(omegasIter[,1])){
       omegas <- omegasIter[i,]
       suppressWarnings(
-        objectFMMList[[i]] <-  backFittingRestr(vData = vData, timePoints = timePoints,
+        objectFMMList[[i]] <-  backfittingRestr(vData = vData, timePoints = timePoints,
                                                 omegas = omegas, lengthAlphaGrid = lengthAlphaGrid,
                                                 alphaGrid = alphaGrid, numReps = numReps, nback = nback,
                                                 maxiter = maxiter, betaRestrictions = betaRestrictions)
@@ -70,7 +70,7 @@ iterateOmegaGrid <- function(vData, omegasIter, betaRestrictions, timePoints = s
 #                 backfitting algorithm
 # Returns an object of class FMM.
 #######################################################################################
-backFittingRestr <- function(vData, omegas, nback, betaRestrictions,
+backfittingRestr <- function(vData, omegas, nback, betaRestrictions,
                              timePoints = seqTimes(length(vData)), lengthAlphaGrid = 48,
                              alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid),
                              numReps = 3, maxiter = nback, stopFunction = alwaysFalse){
@@ -142,10 +142,9 @@ backFittingRestr <- function(vData, omegas, nback, betaRestrictions,
 
   # Residual sum of squares
   SSE <- ifelse(sum(A < 0, na.rm = TRUE) > 0, Inf, sum((fittedFMMvalues-vData)^2))
-  names(A) <- paste("A", 1:length(A), sep="")
 
   # Returns an object of class FMM
-  outMobius <- FMM(
+  return(FMM(
     M = M,
     A = A,
     alpha = alpha,
@@ -157,16 +156,14 @@ backFittingRestr <- function(vData, omegas, nback, betaRestrictions,
     SSE = SSE,
     R2 = PVj(vData, timePoints, alpha, beta, omega),
     nIter = i
-  )
-
-  return(outMobius)
+  ))
 }
 
 #######################################################################################
 # Internal function: to fit monocomponent FMM models with fixed omega.
 # Arguments:
 #   vData: data to be fitted an FMM model.
-#   omega: value of the omega parameter.
+#   omega: fixed value of the omega parameter.
 #   timePoints: one single period time points.
 #   lengthAlphaGrid: precision of the grid of alpha parameter.
 #   alphaGrid: grid of alpha parameter.
@@ -274,7 +271,7 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
     cos(parFinal["beta"] + 2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))
   SSE <- sum((fittedFMMvalues-vData)^2)
 
-  outMobius <- FMM(
+  return(FMM(
     M = parFinal["M"],
     A = parFinal["A"],
     alpha = parFinal[3],
@@ -286,8 +283,7 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
     SSE = SSE,
     R2 = 0,
     nIter = 0
-  )
-  return(outMobius)
+  ))
 }
 
 ################################################################################

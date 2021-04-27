@@ -10,7 +10,7 @@
 \alias{bestStep1}
 \alias{step2FMM}
 \alias{step2FMM_restr}
-\alias{backFittingRestr}
+\alias{backfittingRestr}
 \alias{iterateOmegaGrid}
 \alias{stepOmega}
 \alias{R2}
@@ -29,7 +29,7 @@
 \description{
 The 'FMM' package contains several internal functions called by other functions that are not designed to be called by the user.
 
-To fit a 'FMM' model: The fitting function \code{fitFMM()} calls different internal functions for fits in different situations. \code{fitFMM_unit()} function fits a monocomponent 'FMM' model and \code{fitFMM_back()} fits a multicomponent 'FMM' model via a backfitting algorithm. For restricted version, \code{fitFMM_unit_restr()} is used to fit a monocomponent FMM model with fixed omega; \code{fitFMM_restr_omegaBeta()} and \code{fitFMM_restr()} are used to fit multicomponent 'FMM' models with equality constraints for the beta and omega parameters.
+To fit a 'FMM' model: The fitting function \code{fitFMM()} calls different internal functions for fits in different situations. \code{fitFMM_unit()} function fits a monocomponent 'FMM' model and \code{fitFMM_back()} fits a multicomponent 'FMM' model via a backfitting algorithm. For restricted version, \code{fitFMM_unit_restr()} is used to fit a monocomponent FMM model with fixed omega; \code{fitFMM_restr_omega_beta()} and \code{fitFMM_restr()} are used to fit multicomponent 'FMM' models with equality constraints for the beta and omega parameters.
 
 To fit a single 'FMM' component: The functions \code{step1FMM()}, \code{bestStep1()} are used to find the initial parameter estimations and their optimal values in the first step of the fitting process. \code{step2FMM()} computes the residual sum of squares in the second step of 'FMM' fitting process. In the restricted version, this function is called \code{step2FMM_restr()}. In addition, \code{stepOmega()} function is used in an extra optimization step of omega.
 

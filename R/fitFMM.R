@@ -175,19 +175,19 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     } else {
       #### Exact solution
       if(restrExactSolution){
-        fittedFMM <- fitFMM_restr(vData = summarizedData, timePoints = timePoints, nback = nback,
+        fittedFMM <- fitFMM_restr(vData = summarizedData, nback = nback,
                                   betaRestrictions = betaOmegaRestrictions,
                                   omegaRestrictions = betaOmegaRestrictions,
-                                  maxiter = maxiter, stopFunction = stopFunction,
+                                  timePoints = timePoints, maxiter = maxiter, stopFunction = stopFunction,
                                   lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                   alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
                                   omegaGrid = omegaGrid, numReps = numReps, parallelize = parallelize)
       #### Approximated solution
       } else {
-        fittedFMM <- fitFMM_restr_omega_beta(vData = summarizedData, timePoints = timePoints, nback = nback,
+        fittedFMM <- fitFMM_restr_omega_beta(vData = summarizedData, nback = nback,
                                              betaRestrictions = betaOmegaRestrictions,
                                              omegaRestrictions = betaOmegaRestrictions,
-                                             maxiter = maxiter, stopFunction = alwaysFalse,
+                                             timePoints = timePoints, maxiter = maxiter, stopFunction = alwaysFalse,
                                              lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                              alphaGrid = alphaGrid, omegaMin = omegaMin, omegaMax = omegaMax,
                                              omegaGrid = omegaGrid, numReps = numReps, showProgress = showProgress,

@@ -1,28 +1,16 @@
 ###############################################################
-# Internal functions to fit restricted FMM models
-# Functions:
-#   fitFMM_restr:           to fit restricted multicomponent FMM models.
-#                           An external grid for omega parameter is used.
-#   stepOmega:              to optimize omega.
-#   fitFMM_unit_restr:      to fit monocomponent FMM models with fixed omega.
-#   step2FMM_restr:         second step of FMM fitting process with fixed omega.
-#   fitFMM_restr_omegaBeta: to fit restricted multicomponent FMM models.
-#                           Nested backfitting algorithm is used.
-###############################################################
-
-###############################################################
-# Internal function: to fit restricted multicomponent FMM models.
+# Internal function: to fit restricted FMM models: exact solution.
 # An external grid for omega parameter is used for fitting process.
+# Used by 'fitFMM_restr_omegaBeta'.
 # Arguments:
 #   vData: data to be fitted an FMM model.
-#   timePoints: one single period time points.
 #   nback: number of FMM components to be fitted.
 #   betaRestrictions: beta's constraint vector.
 #   omegaRestrictions: omega's constraint vector.
+#   timePoints: one single period time points.
 #   maxiter: maximum number of iterations for the backfitting algorithm.
 #   stopFunction: function to check the criterion convergence for the backfitting algorithm.
 #   objectFMM: FMM object to refine the fitting process.
-#   staticComponents: fixed components of previous objectFMM.
 #   lengthAlphaGrid, lengthOmegaGrid: precision of the grid of alpha and omega parameters.
 #   alphaGrid, omegaGrid: grids of alpha and omega parameters.
 #                         They can be a list with nback elements, each one for an iteration.
@@ -32,13 +20,13 @@
 #   parallelize: TRUE to use parallelized procedure to fit restricted FMM model.
 # Returns an object of class FMM.
 ###############################################################
-fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
-                      betaRestrictions, omegaRestrictions, maxiter = nback,
-                      stopFunction = alwaysFalse, objectFMM = NULL, staticComponents = NULL,
-                      lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                      alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
-                      omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out = lengthOmegaGrid)),
-                      numReps = 3, parallelize = FALSE){
+fitFMM_restr<-function(vData, nback, betaRestrictions, omegaRestrictions,
+                       timePoints = seqTimes(length(vData)), maxiter = nback,
+                       stopFunction = alwaysFalse, objectFMM = NULL,
+                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
+                       alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
+                       omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out = lengthOmegaGrid)),
+                       numReps = 3, parallelize = FALSE){
 
   n <- length(vData)
   betaRestrictions <- sort(betaRestrictions)
@@ -48,8 +36,7 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
   # External grid of omega parameters
   numOmegas <- length(unique(omegaRestrictions))
   listOmegas <- replicateGrid(omegaGrid, numOmegas)
-  gridOmegas <- expand.grid(listOmegas)
-  omegasIter <- gridOmegas[,omegaRestrictions]
+  omegasIter <- expand.grid(listOmegas)[,omegaRestrictions]
 
   # External loop on the omega grid, setting its value
   objectFMMList <- iterateOmegaGrid(vData = vData, omegasIter = omegasIter, betaRestrictions = betaRestrictions,
@@ -86,13 +73,10 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
 
   # Residual sum of squares
   SSE <- sum((fittedFMMvalues-vData)^2)
-
-  names(A) <- paste("A", 1:length(A), sep = "")
-
   nIter <- getNIter(outMobius)
 
   # Returns an object of class FMM
-  outMobiusFinal <- FMM(
+  return(FMM(
     M = M,
     A = A,
     alpha = alpha,
@@ -104,37 +88,36 @@ fitFMM_restr<-function(vData, timePoints = seqTimes(length(vData)), nback,
     SSE = SSE,
     R2 = PVj(vData, timePoints, alpha, beta, omega),
     nIter = nIter
-  )
-  return(outMobiusFinal)
+  ))
 }
 
 ###############################################################
-# Internal function: to fit restricted multicomponent FMM models.
-# Nested backfitting algorithm is used for fitting process.
-# 'fitFMM_restr' function is used.
+# Internal function: to fit restricted FMM models: approximated solution.
+# Nested backfitting algorithm is used for fitting process. Depends on 'fitFMM_restr'.
 # Arguments:
 #   vData: data to be fitted an FMM model.
-#   timePoints: one single period time points.
 #   nback: number of FMM components to be fitted.
 #   betaRestrictions: beta's constraint vector.
 #   omegaRestrictions: omega's constraint vector.
+#   timePoints: one single period time points.
 #   maxiter: maximum number of iterations for the backfitting algorithm.
 #   stopFunction: function to check the criterion convergence for the backfitting algorithm.
 #   lengthAlphaGrid, lengthOmegaGrid: precision of the grid of alpha and omega parameters.
 #   alphaGrid, omegaGrid: grids of alpha and omega parameters.
+#   omegaMin: min value for omega.
 #   omegaMax: max value for omega.
 #   numReps: number of times the alpha-omega grid search is repeated.
 #   showProgress: TRUE to display a progress indicator on the console.
+#   parallelize: TRUE to use parallelized procedure to fit restricted FMM model.
 # Returns an object of class FMM.
-# Note1: alphaGrid and omegaGrid as lists are not supported
-# Note2: a previous FMM object refine is not supported
+# Note: alphaGrid and omegaGrid as lists are not supported
 ###############################################################
-fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vData)),
-                                  betaRestrictions, omegaRestrictions, maxiter = nback,
-                            stopFunction = alwaysFalse, lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                            alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
-                            omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out=lengthOmegaGrid)),
-                            numReps = 3, showProgress = TRUE, parallelize = FALSE){
+fitFMM_restr_omega_beta<-function(vData, nback, betaRestrictions, omegaRestrictions,
+                                  timePoints = seqTimes(length(vData)), maxiter = nback,
+                                  stopFunction = alwaysFalse, lengthAlphaGrid = 48, lengthOmegaGrid = 24,
+                                  alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
+                                  omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out=lengthOmegaGrid)),
+                                  numReps = 3, showProgress = TRUE, parallelize = FALSE){
   n <- length(vData)
 
   if(is.list(alphaGrid)){
@@ -167,29 +150,30 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
   # Backfitting algorithm: iteration
   for(i in 1:maxiter){
 
-    indBloque <- 1
+    blockIndex <- 1
 
     # Backfitting algorithm: component for each omega block
     for(j in unique(omegaRestrictions)){
-        componentes <- which(omegaRestrictions == j)
-        numComponents <- length(componentes)
+        currentBlock <- which(omegaRestrictions == j)
+        nCurrentBlock <- length(currentBlock)
 
         # data for block k: difference between vData and all other components fitted values
         # of other blocks
-        backFittingData <- vData - apply(as.matrix(fittedValuesPerBlock[,-indBloque]), 1, sum)
-
-        iteraciones <- ifelse(numComponents > 1, min(numComponents + 1, 4), 1)
+        backfittedData <- vData - apply(as.matrix(fittedValuesPerBlock[,-blockIndex]), 1, sum)
 
         # fitting of a block using fitFMM_restr function
-        fittedFMMPerBlock[[indBloque]] <- fitFMM_restr(backFittingData, timePoints = timePoints, nback = numComponents,
-                                                  betaRestrictions = betaRestrictions[componentes],
-                                                  omegaRestrictions = rep(1,numComponents), maxiter = iteraciones,
+        fittedFMMPerBlock[[blockIndex]] <- fitFMM_restr(backfittedData, nback = nCurrentBlock,
+                                                  betaRestrictions = betaRestrictions[currentBlock],
+                                                  omegaRestrictions = rep(1,nCurrentBlock),
+                                                  timePoints = timePoints,
+                                                  maxiter = ifelse(nCurrentBlock > 1,
+                                                                   min(nCurrentBlock + 1, 4), 1),
                                                   lengthAlphaGrid = lengthAlphaGrid, lengthOmegaGrid = lengthOmegaGrid,
                                                   alphaGrid = alphaGrid, omegaMax = omegaMax, omegaGrid = omegaGrid,
                                                   numReps = numReps, parallelize = parallelize)
-        fittedValuesPerBlock[,indBloque] <- getFittedValues(fittedFMMPerBlock[[indBloque]])
+        fittedValuesPerBlock[,blockIndex] <- getFittedValues(fittedFMMPerBlock[[blockIndex]])
 
-        indBloque <- indBloque + 1
+        blockIndex <- blockIndex + 1
 
         # showProgress
         if(showProgress){
@@ -239,7 +223,7 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
     cat("|\n", stopCriteria, nIter, "iteration(s))", "\n")
   }
 
-  # alpha, beta y omega estimates
+  # alpha, beta and omega estimates
   alpha <- unlist(lapply(fittedFMMPerBlock, getAlpha))
   beta <- unlist(lapply(fittedFMMPerBlock, getBeta))
   omega <- unlist(lapply(fittedFMMPerBlock, getOmega))
@@ -255,10 +239,9 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
 
   # Residual sum of squares
   SSE <- sum((fittedFMMvalues - vData)^2)
-  names(A) <- paste("A", 1:length(A), sep = "")
 
   # Returns an object of class FMM
-  outMobius <- FMM(
+  return(FMM(
     M = M,
     A = A,
     alpha = alpha,
@@ -270,6 +253,5 @@ fitFMM_restr_omega_beta<-function(vData, nback, timePoints = seqTimes(length(vDa
     SSE = SSE,
     R2 = PVj(vData, timePoints, alpha, beta, omega),
     nIter = nIter
-  )
-  return(outMobius)
+  ))
 }
