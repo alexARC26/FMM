@@ -8,7 +8,6 @@
 #   stopFunction: function to check the criterion convergence for the backfitting algorithm.
 #   lengthAlphaGrid, lengthOmegaGrid: precision of the grid of alpha and omega parameters.
 #   alphaGrid, omegaGrid: grids of alpha and omega parameters.
-#                         They can be a list with nback elements, each one for an iteration.
 #   omegaMax: max value for omega.
 #   numReps: number of times the alpha-omega grid search is repeated.
 #   showProgress: TRUE to display a progress indicator on the console.
@@ -25,11 +24,8 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
 
   n <- length(vData)
 
-  if(!is.list(alphaGrid))
-    alphaGrid <- replicateGrid(grid = alphaGrid, nback = nback)
-
-  if(!is.list(omegaGrid))
-    omegaGrid <- replicateGrid(grid = omegaGrid, nback = nback)
+  alphaGrid <- replicateGrid(grid = alphaGrid, nback = nback)
+  omegaGrid <- replicateGrid(grid = omegaGrid, nback = nback)
 
   if(showProgress){
     totalMarks <- 50
@@ -104,7 +100,7 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
         previousPercentage <- completedPercentage
       }
     }
-    cat("|\n", stopCriteria, nIter ,"iteration(s) )","\n")
+    cat("|\n", paste(stopCriteria, nIter, sep = ""),"iteration(s) )","\n")
   }
 
   alpha <- unlist(lapply(fittedFMMPerComponent, getAlpha))

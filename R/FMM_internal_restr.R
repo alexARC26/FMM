@@ -28,7 +28,8 @@
 ################################################################################
 iterateOmegaGrid <- function(vData, omegasIter, betaRestrictions, timePoints = seqTimes(length(vData)),
                              lengthAlphaGrid = 48, alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid),
-                             numReps = numReps, nback = nback, maxiter = maxiter, parallelize = FALSE){
+                             numReps = numReps, nback = nback, maxiter = maxiter, stopFunction = alwaysFalse,
+                             parallelize = FALSE){
   if(parallelize){
     # cores for parallelized procedure registered: 'foreach' is used
     objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
@@ -41,12 +42,11 @@ iterateOmegaGrid <- function(vData, omegasIter, betaRestrictions, timePoints = s
     objectFMMList <- list()
     for(i in 1:length(omegasIter[,1])){
       omegas <- omegasIter[i,]
-      suppressWarnings(
-        objectFMMList[[i]] <-  backfittingRestr(vData = vData, timePoints = timePoints,
-                                                omegas = omegas, lengthAlphaGrid = lengthAlphaGrid,
-                                                alphaGrid = alphaGrid, numReps = numReps, nback = nback,
-                                                maxiter = maxiter, betaRestrictions = betaRestrictions)
-      )
+      objectFMMList[[i]] <-  backfittingRestr(vData = vData, timePoints = timePoints,
+                                              omegas = omegas, lengthAlphaGrid = lengthAlphaGrid,
+                                              alphaGrid = alphaGrid, numReps = numReps, nback = nback,
+                                              maxiter = maxiter, betaRestrictions = betaRestrictions,
+                                              stopFunction = stopFunction)
     }
   }
   return(objectFMMList)
@@ -172,9 +172,9 @@ backfittingRestr <- function(vData, omegas, nback, betaRestrictions,
 #######################################################################################
 fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
                             lengthAlphaGrid = 48, alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
-                            numReps = 3, usedApply = getApply(FALSE)[[1]]){
+                            numReps = 3){
   n <- length(vData)
-
+  usedApply = getApply(FALSE)[[1]]
   ## Step 1: initial values of M, A, alpha, beta and omega
   # alpha and omega are fixed and cosinor model is used to calculate the
   # rest of the parameters.
@@ -237,16 +237,15 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
 
     ## Step 1: initial parameters
     grid <- as.matrix(expand.grid(alphaGrid,omega))
-    step1 <- t(apply(grid,1,step1FMM, vData=vData, timePoints=timePoints))
+    step1 <- usedApply(FUN = step1FMM, X = grid, vData = vData, timePoints = timePoints)
     colnames(step1) <- c("M","A","alpha","beta","omega","RSS")
-    antBestPar <- bestPar
+    previousBestPar <- bestPar
     bestPar <- bestStep1(vData,step1)
 
     # None satisfies the conditions
     if(is.null(bestPar)){
-      bestPar <- antBestPar
+      bestPar <- previousBestPar
       numReps <- 0
-      warning("FMM model may be no appropiate")
     }
 
     ## Step 2: Nelder-Mead optimization
@@ -308,11 +307,7 @@ stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
   vData <- getSummarizedData(objFMM)
 
   # FMM fitting and RSS
-  fittedValuesPerComponent <- matrix(0, ncol = nback, nrow = n)
-  for(j in 1:nback){
-    fittedValuesPerComponent[,j] <- A[j]*cos(beta[j] + 2*atan(omega[j]*tan((timePoints-alpha[j])/2)))
-  }
-  fittedValues <- apply(fittedValuesPerComponent, 1, sum) + M
+  fittedValues <- A%*%t(calculateCosPhi(alpha = alpha, beta = beta, omega = omega, timePoints = timePoints)) + M
   RSS <- sum((fittedValues - vData)^2)
 
   # If the integrity conditions are valid, it returns RSS

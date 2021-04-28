@@ -215,7 +215,6 @@ seqTimes <- function(n){
 # Arguments:
 #   angles: input vector of angles.
 ################################################################################
-#Computes the Angular Mean
 angularmean <- function(angles){
   n <- length(angles)
   a.mean <- atan2(sum(sin(angles)),sum(cos(angles)))
@@ -237,7 +236,7 @@ replicateGrid <- function(grid, nback){
 # Arguments:
 #   alpha, beta, omega: parameters.
 #   timePoints: time points in which the FMM model is computed.
-# Returns a list of each component's cos(phi(t)).
+# Returns a matrix of each component's cos(phi(t)) as column.
 ################################################################################
 calculateCosPhi <- function(alpha, beta, omega, timePoints){
   calculateSingleCosPhi <- function(alpha, beta, omega){
@@ -245,9 +244,6 @@ calculateCosPhi <- function(alpha, beta, omega, timePoints){
   }
   return(mapply(FUN = calculateSingleCosPhi, alpha = alpha, beta = beta, omega = omega))
 }
-
-#   getApply:
-
 
 ################################################################################
 # Internal function: returns the parallelized apply function depending on the OS.

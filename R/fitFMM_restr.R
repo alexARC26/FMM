@@ -13,7 +13,6 @@
 #   objectFMM: FMM object to refine the fitting process.
 #   lengthAlphaGrid, lengthOmegaGrid: precision of the grid of alpha and omega parameters.
 #   alphaGrid, omegaGrid: grids of alpha and omega parameters.
-#                         They can be a list with nback elements, each one for an iteration.
 #   omegaMin: min value for omega.
 #   omegaMax: max value for omega.
 #   numReps: number of times the alpha-omega grid search is repeated.
@@ -41,7 +40,7 @@ fitFMM_restr<-function(vData, nback, betaRestrictions, omegaRestrictions,
   # External loop on the omega grid, setting its value
   objectFMMList <- iterateOmegaGrid(vData = vData, omegasIter = omegasIter, betaRestrictions = betaRestrictions,
                                     timePoints = timePoints, alphaGrid = alphaGrid, numReps = numReps,
-                                    nback = nback, maxiter = maxiter, parallelize = parallelize)
+                                    nback = nback, maxiter = maxiter, stopFunction = stopFunction, parallelize = parallelize)
 
   # We keep the best solution
   SSElist <- lapply(objectFMMList, getSSE)
@@ -60,10 +59,7 @@ fitFMM_restr<-function(vData, nback, betaRestrictions, omegaRestrictions,
   alpha <- getAlpha(outMobius)
   omega <- uniqueOmegasOptim[omegaRestrictions]
 
-  designMatrix <- matrix(0, ncol = nback, nrow = n)
-  for(j in 1:nback){
-    designMatrix[,j] <- calculateCosPhi(alpha = alpha[j], beta = beta[j], omega = omega[j], timePoints = timePoints)
-  }
+  designMatrix <- calculateCosPhi(alpha = alpha, beta = beta, omega = omega, timePoints = timePoints)
   regresion <- lm(vData ~ designMatrix)
   M <- coefficients(regresion)[1]
   A <- coefficients(regresion)[-1]
@@ -119,14 +115,6 @@ fitFMM_restr_omega_beta<-function(vData, nback, betaRestrictions, omegaRestricti
                                   omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out=lengthOmegaGrid)),
                                   numReps = 3, showProgress = TRUE, parallelize = FALSE){
   n <- length(vData)
-
-  if(is.list(alphaGrid)){
-    stop("alphaGrid as list not supported when specifying alphaRestrictions")
-  }
-
-  if(is.list(omegaGrid)){
-    stop("omegaGrid as list not supported when specifying omegaRestrictions")
-  }
 
   # showProgress
   if(showProgress){
@@ -220,7 +208,7 @@ fitFMM_restr_omega_beta<-function(vData, nback, betaRestrictions, omegaRestricti
         previousPercentage <- completedPercentage
       }
     }
-    cat("|\n", stopCriteria, nIter, "iteration(s))", "\n")
+    cat("|\n", paste(stopCriteria, nIter, sep = ""), "iteration(s))", "\n")
   }
 
   # alpha, beta and omega estimates
