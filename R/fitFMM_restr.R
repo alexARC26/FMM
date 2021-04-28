@@ -5,12 +5,11 @@
 # Arguments:
 #   vData: data to be fitted an FMM model.
 #   nback: number of FMM components to be fitted.
-#   betaRestrictions: beta's constraint vector.
-#   omegaRestrictions: omega's constraint vector.
+#   betaRestrictions: betas' constraint vector.
+#   omegaRestrictions: omegas' constraint vector.
 #   timePoints: one single period time points.
 #   maxiter: maximum number of iterations for the backfitting algorithm.
 #   stopFunction: function to check the criterion convergence for the backfitting algorithm.
-#   objectFMM: FMM object to refine the fitting process.
 #   lengthAlphaGrid, lengthOmegaGrid: precision of the grid of alpha and omega parameters.
 #   alphaGrid, omegaGrid: grids of alpha and omega parameters.
 #   omegaMin: min value for omega.
@@ -21,8 +20,8 @@
 ###############################################################
 fitFMM_restr<-function(vData, nback, betaRestrictions, omegaRestrictions,
                        timePoints = seqTimes(length(vData)), maxiter = nback,
-                       stopFunction = alwaysFalse, objectFMM = NULL,
-                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
+                       stopFunction = alwaysFalse, lengthAlphaGrid = 48,
+                       lengthOmegaGrid = 24,
                        alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
                        omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out = lengthOmegaGrid)),
                        numReps = 3, parallelize = FALSE){
@@ -106,7 +105,6 @@ fitFMM_restr<-function(vData, nback, betaRestrictions, omegaRestrictions,
 #   showProgress: TRUE to display a progress indicator on the console.
 #   parallelize: TRUE to use parallelized procedure to fit restricted FMM model.
 # Returns an object of class FMM.
-# Note: alphaGrid and omegaGrid as lists are not supported
 ###############################################################
 fitFMM_restr_omega_beta<-function(vData, nback, betaRestrictions, omegaRestrictions,
                                   timePoints = seqTimes(length(vData)), maxiter = nback,

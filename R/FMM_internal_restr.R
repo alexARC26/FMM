@@ -35,7 +35,8 @@ iterateOmegaGrid <- function(vData, omegasIter, betaRestrictions, timePoints = s
     objectFMMList <- foreach::foreach(omegas = iterators::iter(omegasIter, by="row")) %dopar% {
       backfittingRestr(vData = vData, timePoints = timePoints, omegas = omegas,
                        lengthAlphaGrid = lengthAlphaGrid, alphaGrid = alphaGrid, numReps = numReps,
-                       nback = nback, maxiter = maxiter, betaRestrictions = betaRestrictions)
+                       nback = nback, maxiter = maxiter, betaRestrictions = betaRestrictions,
+                       stopFunction = stopFunction)
     }
   }else{
     # 'for' loop (non-parallelized version)
@@ -136,8 +137,8 @@ backfittingRestr <- function(vData, omegas, nback, betaRestrictions,
   cosPhi <- calculateCosPhi(alpha = alpha, beta = restBeta, omega = omega, timePoints = timePoints)
   regresion <- lm(vData ~ cosPhi)
 
-  M <- coefficients(regresion)[1]
-  A <- coefficients(regresion)[-1]
+  M <- as.vector(coefficients(regresion)[1])
+  A <- as.vector(coefficients(regresion)[-1])
   fittedFMMvalues <- predict(regresion)
 
   # Residual sum of squares
@@ -175,6 +176,7 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
                             numReps = 3){
   n <- length(vData)
   usedApply = getApply(FALSE)[[1]]
+
   ## Step 1: initial values of M, A, alpha, beta and omega
   # alpha and omega are fixed and cosinor model is used to calculate the
   # rest of the parameters.

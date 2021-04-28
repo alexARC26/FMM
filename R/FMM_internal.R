@@ -236,7 +236,7 @@ replicateGrid <- function(grid, nback){
 # Arguments:
 #   alpha, beta, omega: parameters.
 #   timePoints: time points in which the FMM model is computed.
-# Returns a matrix of each component's cos(phi(t)) as column.
+# Returns a matrix of each component's cos(phi(t)) as columns.
 ################################################################################
 calculateCosPhi <- function(alpha, beta, omega, timePoints){
   calculateSingleCosPhi <- function(alpha, beta, omega){
