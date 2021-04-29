@@ -130,7 +130,7 @@ backfittingRestr <- function(vData, omegas, nback, betaRestrictions,
     distance[markedBetas == 1] <- Inf
     nearestBetasIndex <- order(distance)[1:numComponents]
     markedBetas[nearestBetasIndex] <- 1
-    restBeta[nearestBetasIndex] <- angularmean(restBeta[nearestBetasIndex])%%(2*pi)
+    restBeta[nearestBetasIndex] <- angularMean(restBeta[nearestBetasIndex])%%(2*pi)
   }
 
   # A and M estimates are recalculated by linear regression

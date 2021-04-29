@@ -8,10 +8,9 @@
 #   PV:              percentage of variability explained.
 #   PVj:             percentage of variability explained by each component of
 #                    FMM model.
-#   angularmean:     to compute the angular mean.
+#   angularMean:     to compute the angular mean.
 #   seqTimes:        to build a sequence of equally time points spaced in range
 #                    [0,2*pi].
-#   replicateGrid:   to replicate a grid, which is returned as a list.
 #   calculateCosPhi: to calculate components' cos(phi(t)).
 #   getApply:        returns the parallelized apply function depending on the OS.
 ################################################################################
@@ -57,7 +56,6 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
   return(c(mParameter, aParameter, alphaParameter, betaParameter,
            omegaParameter, residualSS))
 }
-
 
 ################################################################################
 # Internal function: to find the optimal initial parameter estimation
@@ -156,9 +154,8 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
 #   vData: data to be fitted an FMM model.
 #   pred: fitted values.
 ################################################################################
-PV <- function(vData,pred){
-  meanVData <- mean(vData)
-  return(1 - sum((vData-pred)^2)/sum((vData-meanVData)^2))
+PV <- function(vData, pred){
+  return(1 - sum((vData - pred)^2)/sum((vData - mean(vData))^2))
 }
 
 ################################################################################
@@ -173,41 +170,30 @@ PVj <- function(vData, timePoints, alpha, beta, omega){
 
   # fitted values of each wave
   nComponents <- length(alpha)
-  w <- list()
-  for(i in 1:nComponents){
-    w[[i]] <- cos(beta[i] + 2*atan(omega[i]*tan((timePoints-alpha[i])/2)))
-  }
-
+  waves <- calculateCosPhi(alpha = alpha, beta = beta, omega = omega,
+                           timePoints = timePoints)
   # The fitting is recalculated only up to wave i and
   # the percentage of variability explained is determined
-  PV_hasta <- c()
+  cummulativePV <- c()
   for(i in 1:nComponents){
-    M <- matrix(unlist(w[1:i]),ncol=i)
-    regresion <- lm(vData ~ M)
-    predichos <- predict(regresion)
-    PV_hasta[i] <- PV(vData,predichos)
+    designMatrix <- waves[,1:i]
+    linearModel <- lm(vData ~ designMatrix)
+    fittedValues <- predict(linearModel)
+    cummulativePV[i] <- PV(vData, fittedValues)
   }
 
   # individual percentage of variability is the part that adds to the whole
-  PV_individual <- PV_hasta
-  for(i in 2:nComponents){
-    PV_individual[i] <- PV_hasta[i]-sum(PV_individual[1:(i-1)])
-  }
-
-  return(PV_individual)
-
+  return(c(cummulativePV[1], diff(cummulativePV)))
 }
 
 ################################################################################
 # Internal function: to build a sequence of equally time points spaced
-#                    in range [0,2*pi].
+#                    in range [0,2*pi).
 # Arguments:
 #   n: secuence length.
 ################################################################################
 seqTimes <- function(n){
-  timePoints<-seq(0,2*pi,by=2*pi/n)
-  timePoints<-timePoints[-length(timePoints)]
-  return(timePoints)
+  return(seq(0, 2*pi, length.out = n+1)[1:n])
 }
 
 ################################################################################
@@ -215,20 +201,8 @@ seqTimes <- function(n){
 # Arguments:
 #   angles: input vector of angles.
 ################################################################################
-angularmean <- function(angles){
-  n <- length(angles)
-  a.mean <- atan2(sum(sin(angles)),sum(cos(angles)))
-  return(a.mean)
-}
-
-################################################################################
-# Internal function: to replicate a grid, which is returned as a list.
-# Arguments:
-#   grid: grid to replicate.
-#   nback: times the grid is going to be replicated.
-################################################################################
-replicateGrid <- function(grid, nback){
-  return(replicate(n = nback, grid, simplify = FALSE))
+angularMean <- function(angles){
+  return(atan2(sum(sin(angles)), sum(cos(angles))))
 }
 
 ################################################################################
