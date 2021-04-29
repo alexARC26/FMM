@@ -1,9 +1,9 @@
-###############################################################
+###########################################################################################
 # Internal function: fit multicomponent FMM model
 # Arguments:
 #   vData: data to be fitted an FMM model.
-#   timePoints: one single period time points.
 #   nback: number of FMM components to be fitted.
+#   timePoints: one single period time points.
 #   maxiter: maximum number of iterations for the backfitting algorithm.
 #   stopFunction: function to check the criterion convergence for the backfitting algorithm.
 #   lengthAlphaGrid, lengthOmegaGrid: precision of the grid of alpha and omega parameters.
@@ -12,7 +12,7 @@
 #   numReps: number of times the alpha-omega grid search is repeated.
 #   showProgress: TRUE to display a progress indicator on the console.
 # Returns an object of class FMM.
-###############################################################
+###########################################################################################
 fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
                       maxiter = nback, stopFunction = alwaysFalse,
                       lengthAlphaGrid = 48, lengthOmegaGrid = 24,
@@ -55,7 +55,7 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
       if(showProgress){
         completedPercentage <- completedPercentage + 100/(nback*maxiter)
         if(ceiling(previousPercentage) < floor(completedPercentage)){
-          progressDone<-paste(rep("=",sum((seq(ceiling(previousPercentage), floor(completedPercentage), by = 1)
+          progressDone <- paste(rep("=",sum((seq(ceiling(previousPercentage), floor(completedPercentage), by = 1)
                                            %% partialMarkLength == 0))), collapse = "")
           cat(progressDone)
           previousPercentage <- completedPercentage

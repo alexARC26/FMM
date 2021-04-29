@@ -140,7 +140,7 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
 
   # Other integrity conditions that must be met
   rest3 <- parameters[2] > 0  # A > 0
-  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax # omega > 0 and omega <= omegaMax
+  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax # omega in (0, 1]
   if(rest1 & rest2 & rest3 & rest4)
     return(residualSS)
   else
