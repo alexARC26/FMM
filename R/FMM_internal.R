@@ -1,16 +1,19 @@
 ################################################################################
 # Auxiliary internal functions
 # Functions:
-#   step1FMM:     M, A and beta initial parameter estimations.
-#   bestStep1:    to find the optimal initial parameters estimation.
-#   step2FMM:     second step of FMM fitting process.
-#   refineFMM:    fitFMM from a previous objectFMM.
-#   PV:           percentage of variability explained.
-#   PVj:          percentage of variability explained by each component of
-#                 FMM model.
-#   angularmean:  to compute the angular mean.
-#   seqTimes:     to build a sequence of equally time points spaced in range
-#                 [0,2*pi].
+#   step1FMM:        M, A and beta initial parameter estimations.
+#   bestStep1:       to find the optimal initial parameters estimation.
+#   step2FMM:        second step of FMM fitting process.
+#   refineFMM:       fitFMM from a previous objectFMM.
+#   PV:              percentage of variability explained.
+#   PVj:             percentage of variability explained by each component of
+#                    FMM model.
+#   angularmean:     to compute the angular mean.
+#   seqTimes:        to build a sequence of equally time points spaced in range
+#                    [0,2*pi].
+#   replicateGrid:   to replicate a grid, which is returned as a list.
+#   calculateCosPhi: to calculate components' cos(phi(t)).
+#   getApply:        returns the parallelized apply function depending on the OS.
 ################################################################################
 
 
@@ -44,7 +47,7 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
                  covMatrix[1,2]*covMatrix[2,3])/denominator
   mParameter <- mean(vData) - cosCoeff*mean(costStar) - sinCoeff*mean(sentstar)
 
-  phiEst <- atan2(-sinCoeff, cosCoeff)   # acrophase (phi)
+  phiEst <- atan2(-sinCoeff, cosCoeff)
   aParameter <- sqrt(cosCoeff^2 + sinCoeff^2)
   betaParameter <- (phiEst+alphaParameter)%%(2*pi)
 
@@ -212,28 +215,39 @@ seqTimes <- function(n){
 # Arguments:
 #   angles: input vector of angles.
 ################################################################################
-#Computes the Angular Mean
 angularmean <- function(angles){
   n <- length(angles)
   a.mean <- atan2(sum(sin(angles)),sum(cos(angles)))
   return(a.mean)
 }
 
+################################################################################
+# Internal function: to replicate a grid, which is returned as a list.
+# Arguments:
+#   grid: grid to replicate.
+#   nback: times the grid is going to be replicated.
+################################################################################
 replicateGrid <- function(grid, nback){
   return(replicate(n = nback, grid, simplify = FALSE))
 }
 
+################################################################################
+# Internal function: to calculate components' cos(phi(t)).
+# Arguments:
+#   alpha, beta, omega: parameters.
+#   timePoints: time points in which the FMM model is computed.
+# Returns a matrix of each component's cos(phi(t)) as columns.
+################################################################################
 calculateCosPhi <- function(alpha, beta, omega, timePoints){
   calculateSingleCosPhi <- function(alpha, beta, omega){
     return(cos(beta + 2*atan(omega*tan((timePoints - alpha)/2))))
   }
-
-  return(mapply(FUN=calculateSingleCosPhi, alpha=alpha, beta=beta, omega=omega))
+  return(mapply(FUN = calculateSingleCosPhi, alpha = alpha, beta = beta, omega = omega))
 }
 
 ################################################################################
-# Internal function: return parallelized apply function depending on the OS.
-# Returns function to be used.
+# Internal function: returns the parallelized apply function depending on the OS.
+# Returns the apply function to be used.
 ################################################################################
 getApply <- function(parallelize = FALSE, nCores = min(12, parallel::detectCores() - 1)){
 
@@ -274,4 +288,3 @@ getApply <- function(parallelize = FALSE, nCores = min(12, parallel::detectCores
 
   return(list(usedApply, parallelCluster))
 }
-

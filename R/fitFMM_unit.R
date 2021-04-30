@@ -99,8 +99,8 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   SSE <- sum((fittedFMMvalues-vData)^2)
 
   return(FMM(
-    M = parFinal[["M"]],
-    A = parFinal[["A"]],
+    M = parFinal[[1]],
+    A = parFinal[[2]],
     alpha = parFinal[[3]],
     beta = parFinal[[4]],
     omega = parFinal[[5]],

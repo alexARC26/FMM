@@ -50,7 +50,7 @@ By default it is set to 24 possible values of omega, equally spaced between 0 an
 
 \item{showTime}{\code{TRUE} to display execution time on the console.}
 
-\item{parallelize}{\code{TRUE} to use parallelized procedure to fit restricted FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to 12, or if the machine has less, the number of cores - 1.}
+\item{parallelize}{\code{TRUE} to use parallelized procedure to fit FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to 12, or if the machine has less, the number of cores - 1.}
 
 \item{restrExactSolution}{\code{FALSE} to use an aproximated algorithm to fit the model (default). If \code{TRUE} is specified, an nearly exact solution is computed.}
 }
