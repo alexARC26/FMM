@@ -91,7 +91,7 @@ backfittingRestr <- function(vData, omegas, nback, betaRestrictions,
       fittedFMMPerComponent[[j]] <- fitFMM_unit_restr(backFittingData, omegas[j], timePoints = timePoints,
                                                       lengthAlphaGrid = lengthAlphaGrid, alphaGrid = alphaGrid[[j]],
                                                       numReps = numReps)
-      fittedValuesPerComponent[,j] <- fittedFMMPerComponent[[j]]@fittedValues
+      fittedValuesPerComponent[,j] <- getFittedValues(fittedFMMPerComponent[[j]])
     }
 
     # Check stop criterion

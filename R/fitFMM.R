@@ -148,12 +148,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   }
 
   # Used apply function for compute FMM models
-  if(length(unique(betaOmegaRestrictions)) != nback && !parallelize){
-    usedApply_Cluster <- getApply(parallelize = TRUE, nCores = 1)
-  }else{
-    usedApply_Cluster <- getApply(parallelize = parallelize)
-  }
-
+  usedApply_Cluster <- getApply(parallelize = parallelize)
   usedApply <- usedApply_Cluster[[1]]
 
   ### fitFMM_unit
@@ -208,16 +203,16 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   fittedFMM@nPeriods <- nPeriods
   fittedFMM@data <- vData
 
-  explainedVarOrder <- order(fittedFMM@R2,decreasing = TRUE)
+  explainedVarOrder <- order(getR2(fittedFMM),decreasing = TRUE)
 
-  fittedFMM@A <- fittedFMM@A[explainedVarOrder]
-  fittedFMM@alpha <- fittedFMM@alpha[explainedVarOrder]
-  fittedFMM@beta <- fittedFMM@beta[explainedVarOrder]
-  fittedFMM@omega <- fittedFMM@omega[explainedVarOrder]
-  fittedFMM@R2 <- fittedFMM@R2[explainedVarOrder]
+  fittedFMM@A <- getA(fittedFMM)[explainedVarOrder]
+  fittedFMM@alpha <- getAlpha(fittedFMM)[explainedVarOrder]
+  fittedFMM@beta <- getBeta(fittedFMM)[explainedVarOrder]
+  fittedFMM@omega <- getOmega(fittedFMM)[explainedVarOrder]
+  fittedFMM@R2 <- getR2(fittedFMM)[explainedVarOrder]
 
   # Restricted algorithm may find models with A<0
-  needFix <- which(fittedFMM@A < 0)
+  needFix <- which(getA(fittedFMM) < 0)
   if(length(needFix)>0) {
     stop("Invalid solution: check function input parameters.")
   }

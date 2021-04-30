@@ -26,14 +26,14 @@
 #' extractWaves(fit)
 #'
 extractWaves <- function(objFMM){
-   nComponents <- length(objFMM@alpha)
-   timePoints <- objFMM@timePoints
-   firstValue <- objFMM@data[1]
+   nComponents <- length(getAlpha(objFMM))
+   timePoints <- getTimePoints(objFMM)
+   firstValue <- getData(objFMM)[1]
    predicted <- list()
 
    for(i in 1:nComponents){
-     predictedComponent <- objFMM@A[i]*calculateCosPhi(objFMM@alpha[i], objFMM@beta[i],
-                                                       objFMM@omega[i], timePoints)
+     predictedComponent <- getA(objFMM)[i]*calculateCosPhi(getAlpha(objFMM)[i], getBeta(objFMM)[i],
+                                                       getOmega(objFMM)[i], timePoints)
      predicted[[i]] <- predictedComponent - predictedComponent[1] + firstValue
    }
    return(predicted)

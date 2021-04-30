@@ -59,31 +59,31 @@
 plotFMM <- function(objFMM, components = FALSE, plotAlongPeriods = FALSE,
                     use_ggplot2 = FALSE, legendInComponentsPlot = TRUE, textExtra = ""){
 
-  nPeriods <- objFMM@nPeriods
+  nPeriods <- getNPeriods(objFMM)
   if(nPeriods > 1){
     if(plotAlongPeriods & !components){
-      vData <- objFMM@data
+      vData <- getData(objFMM)
     }else{
-      vData <- objFMM@summarizedData
+      vData <- getSummarizedData(objFMM)
     }
-  }else{vData <- objFMM@data}
+  }else{vData <- getData(objFMM)}
   nObs <- length(vData)
 
   if(plotAlongPeriods & !components){
-    timePoints <- objFMM@timePoints
+    timePoints <- getTimePoints(objFMM)
     timePoints <- rep(timePoints, nPeriods)
   }else{
-    timePoints <- objFMM@timePoints
+    timePoints <- getTimePoints(objFMM)
   }
 
-  col = 2:(length(objFMM@alpha)+1)
+  col = 2:(length(getAlpha(objFMM))+1)
 
   significantTimePoints <- round(c(1, nObs*0.25, nObs*0.5, nObs*0.75, nObs))
 
   # Components plot: if there is more than one period, just the data from the first period will be plotted
   if(components){
     title <- ifelse(textExtra != "", paste("Components FMM", textExtra, sep = " - "),"Components FMM")
-    nComponents <- length(objFMM@alpha)
+    nComponents <- length(getAlpha(objFMM))
     componentNames<-paste("Wave ", 1:nComponents, sep = "")
 
     predicted <- extractWaves(objFMM)
@@ -136,20 +136,19 @@ plotFMM <- function(objFMM, components = FALSE, plotAlongPeriods = FALSE,
     if(!use_ggplot2){
       plot(1:nObs, vData, xlab = "Time", ylab = "Response", main = title, xaxt = "n")
       if(plotAlongPeriods){
-        points(1:nObs, rep(objFMM@fittedValues, nPeriods), type = "l", col = 2, lwd = 2)
+        points(1:nObs, rep(getFittedValues(objFMM), nPeriods), type = "l", col = 2, lwd = 2)
       }else{
-        points(1:nObs, objFMM@fittedValues, type = "l", col = 2, lwd = 2)
+        points(1:nObs, getFittedValues(objFMM), type = "l", col = 2, lwd = 2)
       }
       axis(1, las = 1, at = significantTimePoints,
            labels = parse(text=paste("t[",significantTimePoints, "]", sep = "")))
     } else {
       requireNamespace("ggplot2", quietly = TRUE)
 
-      adjustedModel <- ifelse(plotAlongPeriods, rep(objFMM@fittedValues, nPeriods),
-                              objFMM@fittedValues)
+      adjustedModel <- ifelse(plotAlongPeriods, rep(getFittedValues(objFMM), nPeriods),
+                              getFittedValues(objFMM))
 
-      fittedData <- data.frame("Time" = 1:nObs, "fitted_FMM" = adjustedModel,
-                               "Response" = vData)
+      fittedData <- data.frame("Time" = 1:nObs, "fitted_FMM" = adjustedModel, "Response" = vData)
 
       plot <- ggplot2::ggplot(data = fittedData, ggplot2::aes_(x=~Time, y=~Response, color = 1)) +
         ggplot2::geom_point(size = 2, color = "grey65", shape = 21, stroke = 1.1) +

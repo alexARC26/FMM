@@ -223,7 +223,7 @@ calculateCosPhi <- function(alpha, beta, omega, timePoints){
 # Internal function: returns the parallelized apply function depending on the OS.
 # Returns the apply function to be used.
 ################################################################################
-getApply <- function(parallelize = FALSE, nCores = min(12, parallel::detectCores() - 1)){
+getApply <- function(parallelize = FALSE){
 
   getApply_Rbase <- function(){
     usedApply <- function(FUN, X, ...) t(apply(X = X, MARGIN = 1, FUN = FUN, ...))
@@ -243,6 +243,8 @@ getApply <- function(parallelize = FALSE, nCores = min(12, parallel::detectCores
     }
     return(usedApply)
   }
+
+  nCores <- min(12, parallel::detectCores() - 1)
 
   if(parallelize){
     # different ways to implement parallelization depending on OS:

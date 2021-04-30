@@ -59,11 +59,16 @@ generateFMM <- function(M, A, alpha, beta, omega, from = 0, to = 2*pi, length.ou
                         outvalues = TRUE, sigmaNoise = 0){
 
   narg <- max(length(M), length(A), length(alpha), length(beta), length(omega))
+  minLength <- min(length(A), length(alpha), length(beta), length(omega))
 
   if(length(M)>1){
-    warning("M parameter should be a vector of length 1.
+    warning("'M' parameter should be a vector of length 1.
             The intercept parameter used in the simulation is the sum of the elements of the argument M.")
     M <- sum(M)
+  }
+
+  if(minLength != narg){
+    warning("'A', 'alpha', 'beta' and 'omega' parameters have different lengths.")
   }
 
   A <- rep(A, length.out = narg)

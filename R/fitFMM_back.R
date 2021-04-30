@@ -50,7 +50,7 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
       fittedFMMPerComponent[[j]] <- fitFMM_unit(backFittingData, timePoints = timePoints, lengthAlphaGrid = lengthAlphaGrid,
                                             lengthOmegaGrid = lengthOmegaGrid, alphaGrid = alphaGrid, omegaMin = omegaMin,
                                             omegaMax = omegaMax, omegaGrid = omegaGrid, numReps = numReps, usedApply)
-      fittedValuesPerComponent[,j] <- fittedFMMPerComponent[[j]]@fittedValues
+      fittedValuesPerComponent[,j] <- getFittedValues(fittedFMMPerComponent[[j]])
       # showProgress
       if(showProgress){
         completedPercentage <- completedPercentage + 100/(nback*maxiter)
