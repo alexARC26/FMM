@@ -34,7 +34,7 @@ To fit a single 'FMM' component: The functions \code{step1FMM()}, \code{bestStep
 
 To check the convergence criterion for the backfitting algorithm: \code{alwaysFalse()} is used to force a number of iterations while \code{R2()} is used to check if the stop condition, based on the difference between the variability explained in two consecutive iterations, is reached.
 
-Additional functions: The functions \code{PV()}, \code{PVj()}, \code{angularMean()} and \code{calculateCosPhi()} are used in the fitting process to compute the total percentage of variability explained, the percentage of variability explained by each component of 'FMM' model, the angular mean and the cosinus of each of the waves phase,respectively. \code{seqTimes()} is used to build a sequence of equally time points spaced in range \eqn{[0, 2\pi]}. \code{replicateGrid()} serves to create the grid of values for the parameters to be studied whereas \code{getApply()} serves to prepare the parallelized estimation procedure.
+Additional functions: The functions \code{PV()}, \code{PVj()}, \code{angularMean()} and \code{calculateCosPhi()} are used in the fitting process to compute the total percentage of variability explained, the percentage of variability explained by each component of 'FMM' model, the angular mean and the cosinus of each of the waves phase,respectively. \code{seqTimes()} is used to build a sequence of equally time points spaced in range \eqn{[0, 2\pi]}. \code{getApply()} serves to prepare the parallelized estimation procedure.
 
 }
 
