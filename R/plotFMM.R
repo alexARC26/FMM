@@ -145,8 +145,11 @@ plotFMM <- function(objFMM, components = FALSE, plotAlongPeriods = FALSE,
     } else {
       requireNamespace("ggplot2", quietly = TRUE)
 
-      adjustedModel <- ifelse(plotAlongPeriods, rep(getFittedValues(objFMM), nPeriods),
-                              getFittedValues(objFMM))
+      if(plotAlongPeriods){
+        adjustedModel<-rep(getFittedValues(objFMM),nPeriods)
+      }else{
+        adjustedModel<-getFittedValues(objFMM)
+      }
 
       fittedData <- data.frame("Time" = 1:nObs, "fitted_FMM" = adjustedModel, "Response" = vData)
 
