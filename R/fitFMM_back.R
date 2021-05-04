@@ -22,7 +22,7 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
                                           length.out = lengthOmegaGrid)),
                       numReps = 3, showProgress = TRUE, usedApply = getApply(FALSE)[[1]]){
 
-  n <- length(vData)
+  nObs <- length(vData)
 
   if(showProgress){
     totalMarks <- 50
@@ -34,7 +34,7 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
   }
 
   # Object initialization.
-  fittedValuesPerComponent <- matrix(rep(0, n*nback), ncol = nback)
+  fittedValuesPerComponent <- matrix(rep(0, nObs*nback), ncol = nback)
   fittedFMMPerComponent <- list()
   prevFittedFMMvalues <- NULL
   stopCriteria <- "Stopped by reaching maximum iterations ("

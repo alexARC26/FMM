@@ -26,14 +26,12 @@ fitFMM_restr<-function(vData, nback, betaRestrictions, omegaRestrictions,
                        omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out = lengthOmegaGrid)),
                        numReps = 3, parallelize = FALSE){
 
-  n <- length(vData)
   betaRestrictions <- sort(betaRestrictions)
   omegaRestrictions <- sort(omegaRestrictions)
-  alphaGrid <- replicateGrid(alphaGrid, nback = nback)
 
   # External grid of omega parameters
   numOmegas <- length(unique(omegaRestrictions))
-  listOmegas <- replicateGrid(omegaGrid, numOmegas)
+  listOmegas <- replicate(n = numOmegas, omegaGrid, simplify = FALSE)
   omegasIter <- expand.grid(listOmegas)[,omegaRestrictions]
 
   # External loop on the omega grid, setting its value
@@ -112,7 +110,7 @@ fitFMM_restr_omega_beta<-function(vData, nback, betaRestrictions, omegaRestricti
                                   alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid), omegaMin = 0.0001, omegaMax = 1,
                                   omegaGrid = exp(seq(log(omegaMin),log(omegaMax), length.out=lengthOmegaGrid)),
                                   numReps = 3, showProgress = TRUE, parallelize = FALSE){
-  n <- length(vData)
+  nObs <- length(vData)
 
   # showProgress
   if(showProgress){
@@ -128,7 +126,7 @@ fitFMM_restr_omega_beta<-function(vData, nback, betaRestrictions, omegaRestricti
   numBlocks <- length(unique(omegaRestrictions))
 
   # Object initialization
-  fittedValuesPerBlock <- matrix(0, ncol = numBlocks, nrow = n)
+  fittedValuesPerBlock <- matrix(0, ncol = numBlocks, nrow = nObs)
   fittedFMMPerBlock <- list()
   prevFittedFMMvalues <- NULL
 

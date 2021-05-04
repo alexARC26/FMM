@@ -20,7 +20,7 @@ alwaysFalse <- function(vData, pred, prevPred){
 
 ################################################################################
 # Internal function: to check if the convergence criterion based on the
-#                    difference between theexplained variability in two
+#                    difference between the explained variability in two
 #                    consecutive iterations, is reached.
 # Arguments:
 #   vData: data to be fitted an FMM model.
@@ -34,7 +34,7 @@ R2 <- function(vData,pred,prevPred,difMax = 0.001){
   usedStopFunction <- function(vData, pred, prevPred){
     prevR2 <- PV(vData, prevPred)
     R2 <- PV(vData, pred)
-    R2diff <- R2 - prevR2
+    R2dif <- R2 - prevR2
     return(R2dif < difMax)
   }
   return(usedStopFunction)

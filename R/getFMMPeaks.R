@@ -66,7 +66,7 @@ getFMMPeaks <- function(objFMM, timePointsIn2pi = TRUE) {
   phL <- lapply(1:nComp, function(k) (peakL[k]-alpha)/2)
   ZU <- sapply(1:nComp, function(k) M+sum(A*cos(beta + 2*atan(omega*tan(phU[[k]])))))
   ZL <- sapply(1:nComp, function(k) M+sum(A*cos(beta + 2*atan(omega*tan(phL[[k]])))))
-  names(ZU) <- names(ZL) <- NULL
+  names(ZU) <- NULL; names(ZL) <- NULL
 
   return(list(tpeakU = tpeakU, tpeakL = tpeakL, ZU = ZU, ZL = ZL))
 }

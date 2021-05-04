@@ -117,9 +117,6 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   omegaMax <- 1
   omegaGrid <- exp(seq(log(omegaMin),log(omegaMax),length.out = lengthOmegaGrid))
 
-  staticComponents <- NULL
-  objectFMM <- NULL
-
   betaOmegaRestrictions <- sort(betaOmegaRestrictions)
 
   if(showTime) time.ini <- Sys.time()
@@ -129,7 +126,6 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     n <- length(vData)
     if(n %% nPeriods != 0) stop("Data length is not a multiple of nPeriods")
     dataMatrix <- matrix(vData, nrow = nPeriods, ncol = n/nPeriods, byrow = TRUE)
-    #vDataAnt <- vData
     summarizedData <- apply(dataMatrix, 2, mean)
   } else {
     summarizedData <- vData
@@ -203,6 +199,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   fittedFMM@nPeriods <- nPeriods
   fittedFMM@data <- vData
 
+  # Reorder components by explained variability
   explainedVarOrder <- order(getR2(fittedFMM),decreasing = TRUE)
 
   fittedFMM@A <- getA(fittedFMM)[explainedVarOrder]
@@ -212,8 +209,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   fittedFMM@R2 <- getR2(fittedFMM)[explainedVarOrder]
 
   # Restricted algorithm may find models with A<0
-  needFix <- which(getA(fittedFMM) < 0)
-  if(length(needFix)>0) {
+  if(any(getA(fittedFMM) < 0)) {
     stop("Invalid solution: check function input parameters.")
   }
 

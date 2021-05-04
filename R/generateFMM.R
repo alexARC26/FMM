@@ -58,40 +58,39 @@ generateFMM <- function(M, A, alpha, beta, omega, from = 0, to = 2*pi, length.ou
                         timePoints = seq(from, to, length = length.out), plot=TRUE,
                         outvalues = TRUE, sigmaNoise = 0){
 
-  narg <- max(length(M), length(A), length(alpha), length(beta), length(omega))
+  nArgs <- max(length(M), length(A), length(alpha), length(beta), length(omega))
   minLength <- min(length(A), length(alpha), length(beta), length(omega))
 
   if(length(M)>1){
-    warning("'M' parameter should be a vector of length 1.
-            The intercept parameter used in the simulation is the sum of the elements of the argument M.")
+    warning("'M' parameter should be a vector of length 1. Using as 'M' the sum of the specified argument.")
     M <- sum(M)
   }
 
-  if(minLength != narg){
+  if(minLength != nArgs){
     warning("'A', 'alpha', 'beta' and 'omega' parameters have different lengths.")
   }
 
-  A <- rep(A, length.out = narg)
+  A <- rep(A, length.out = nArgs)
   if(sum(A <= 0) > 0) stop("'A' parameter must be positive.")
 
-  alpha <- rep(alpha, length.out = narg)
+  alpha <- rep(alpha, length.out = nArgs)
   alpha <- alpha%%(2*pi) # between 0 and 2*pi
 
-  beta <- rep(beta, length.out = narg)
+  beta <- rep(beta, length.out = nArgs)
   beta <- beta%%(2*pi) # between 0 and 2*pi
 
-  omega <- rep(omega, length.out = narg)
-  if(sum(omega<0)>0 | sum(omega>1)>0) stop("'omega' parameter must be between 0 and 1.")
+  omega <- rep(omega, length.out = nArgs)
+  if(any(omega<0) | any(omega>1)) stop("'omega' parameter must be between 0 and 1.")
 
   y <- as.vector(A%*%t(calculateCosPhi(alpha = alpha, beta = beta, omega = omega,
-                             timePoints = timePoints)) + M)
+                                       timePoints = timePoints)) + M)
 
-  if (sigmaNoise > 0) y <- y + rnorm(length.out, 0, sigmaNoise)
+  if (sigmaNoise > 0) y <- y + rnorm(n = length.out, mean = 0, sd = sigmaNoise)
 
   if(plot) {
     lineType <- ifelse(sigmaNoise == 0, "l", "p")
-    plot(timePoints, y, type = lineType, lwd = 2, col = 2, xlab = "Time", ylab = "Response",
-                main = paste("Simulated data from FMM model"))
+    plot(timePoints, y, type = lineType, lwd = 2, col = 2, xlab = "Time",
+         ylab = "Response", main = paste("Simulated data from FMM model"))
   }
 
   if(outvalues) return(list(input=list(M = M, A = A, alpha = alpha, beta = beta,

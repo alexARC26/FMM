@@ -7,6 +7,7 @@
 #   fitFMM_unit_restr:  to fit monocomponent FMM models with fixed omega.
 #   stepOmega:          to optimize omega.
 #   step2FMM_restr:     second step of FMM fitting process with fixed omega
+#   angularMean:        to compute the angular mean.
 ################################################################################
 
 ################################################################################
@@ -75,9 +76,9 @@ backfittingRestr <- function(vData, omegas, nback, betaRestrictions,
                              timePoints = seqTimes(length(vData)), lengthAlphaGrid = 48,
                              alphaGrid = seq(0,2*pi,length.out = lengthAlphaGrid),
                              numReps = 3, maxiter = nback, stopFunction = alwaysFalse){
-  n <- length(vData)
+  nObs <- length(vData)
   omegas <- as.numeric(omegas)
-  fittedValuesPerComponent <- matrix(0, ncol = nback, nrow = n)
+  fittedValuesPerComponent <- matrix(0, ncol = nback, nrow = nObs)
   fittedFMMPerComponent <- list()
   prevFittedFMMvalues <- NULL
 
@@ -174,7 +175,6 @@ backfittingRestr <- function(vData, omegas, nback, betaRestrictions,
 fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
                             lengthAlphaGrid = 48, alphaGrid = seq(0, 2*pi, length.out = lengthAlphaGrid),
                             numReps = 3){
-  n <- length(vData)
   usedApply = getApply(FALSE)[[1]]
 
   ## Step 1: initial values of M, A, alpha, beta and omega
@@ -299,13 +299,11 @@ fitFMM_unit_restr<-function(vData, omega, timePoints = seqTimes(length(vData)),
 stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
 
   timePoints <- getTimePoints(objFMM)
-  n <- length(timePoints)
   M <- getM(objFMM)
   A <- getA(objFMM)
   alpha <- getAlpha(objFMM)
   beta <- getBeta(objFMM)
   omega <- uniqueOmegas[indOmegas]
-  nback <- length(alpha)
   vData <- getSummarizedData(objFMM)
 
   # FMM fitting and RSS
@@ -333,13 +331,13 @@ stepOmega <- function(uniqueOmegas, indOmegas, objFMM, omegaMax){
 ################################################################################
 step2FMM_restr <- function(parameters, vData, timePoints, omega){
 
-  n <- length(timePoints)
+  nObs <- length(timePoints)
   # FMM model and residual sum of squares
   modelFMM <- parameters[1] + parameters[2] *
     cos(parameters[4]+2*atan2(omega*sin((timePoints - parameters[3])/2),
                               cos((timePoints - parameters[3])/2)))
-  residualSS <- sum((modelFMM - vData)^2)/n
-  sigma <- sqrt(residualSS*n/(n - 5))
+  residualSS <- sum((modelFMM - vData)^2)/nObs
+  sigma <- sqrt(residualSS*nObs/(nObs - 5))
 
   # When amplitude condition is valid, it returns RSS
   # else it returns infinite.
@@ -355,4 +353,13 @@ step2FMM_restr <- function(parameters, vData, timePoints, omega){
   }else{
     return(Inf)
   }
+}
+
+################################################################################
+# Internal function: to compute the angular mean.
+# Arguments:
+#   angles: input vector of angles.
+################################################################################
+angularMean <- function(angles){
+  return(atan2(sum(sin(angles)), sum(cos(angles))))
 }

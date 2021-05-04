@@ -88,11 +88,9 @@ plotFMM <- function(objFMM, components = FALSE, plotAlongPeriods = FALSE,
 
     predicted <- extractWaves(objFMM)
 
-    minValue <- min(sapply(predicted, min))
-    maxValue <- max(sapply(predicted, max))
-
     if(!use_ggplot2){
-      plot(1:nObs, vData, ylim = c(minValue, maxValue), xlab = "Time", ylab = "Response",
+      yLimits<-c(min(sapply(predicted, min)), max(sapply(predicted, max)))
+      plot(1:nObs, vData, ylim = yLimits, xlab = "Time", ylab = "Response",
            main = title, type = "n", xaxt = "n")
       for(i in 1:nComponents){
         points(1:nObs, predicted[[i]], type = "l", lwd = 2, col = col[i])

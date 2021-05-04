@@ -8,7 +8,6 @@
 #   PV:              percentage of variability explained.
 #   PVj:             percentage of variability explained by each component of
 #                    FMM model.
-#   angularMean:     to compute the angular mean.
 #   seqTimes:        to build a sequence of equally time points spaced in range
 #                    [0,2*pi].
 #   calculateCosPhi: to calculate components' cos(phi(t)).
@@ -73,7 +72,7 @@ bestStep1 <- function(vData, step1){
 
   maxVData <- max(vData)
   minVData <- min(vData)
-  n <- length(vData)
+  nObs <- length(vData)
 
   # iterative search: go through rows ordered step 1
   #    until the first one that verifies the stability conditions
@@ -83,10 +82,7 @@ bestStep1 <- function(vData, step1){
     # parameters
     mParameter <- step1[orderedModelParameters[i], "M"]
     aParameter <- step1[orderedModelParameters[i], "A"]
-    alphaParameter <- step1[orderedModelParameters[i], "alpha"]
-    betaParameter <- step1[orderedModelParameters[i], "beta"]
-    omegaParameter <- step1[orderedModelParameters[i], "omega"]
-    sigma <- sqrt(step1[orderedModelParameters[i], "RSS"]*n/(n-5))
+    sigma <- sqrt(step1[orderedModelParameters[i], "RSS"]*nObs/(nObs-5))
 
     # stability conditions
     amplitudeUpperBound <- mParameter + aParameter
@@ -122,14 +118,14 @@ bestStep1 <- function(vData, step1){
 ################################################################################
 step2FMM <- function(parameters, vData, timePoints, omegaMax){
 
-  n <- length(timePoints)
+  nObs <- length(timePoints)
 
   # FMM model and residual sum of squares
   modelFMM <- parameters[1] + parameters[2] *
     cos(parameters[4]+2*atan2(parameters[5]*sin((timePoints - parameters[3])/2),
                                 cos((timePoints - parameters[3])/2)))
-  residualSS <- sum((modelFMM - vData)^2)/n
-  sigma <- sqrt(residualSS*n/(n - 5))
+  residualSS <- sum((modelFMM - vData)^2)/nObs
+  sigma <- sqrt(residualSS*nObs/(nObs - 5))
 
   # When amplitude condition is valid, it returns RSS
   # else it returns infinite.
@@ -140,7 +136,7 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
 
   # Other integrity conditions that must be met
   rest3 <- parameters[2] > 0  # A > 0
-  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax # omega in (0, 1]
+  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax # omega in (0, omegaMax]
   if(rest1 & rest2 & rest3 & rest4)
     return(residualSS)
   else
@@ -167,42 +163,26 @@ PV <- function(vData, pred){
 #   alpha, beta, omega: vectors of corresponding parameter estimates.
 ################################################################################
 PVj <- function(vData, timePoints, alpha, beta, omega){
-
-  # fitted values of each wave
+  # Fitted values of each wave
   nComponents <- length(alpha)
   waves <- calculateCosPhi(alpha = alpha, beta = beta, omega = omega,
                            timePoints = timePoints)
-  # The fitting is recalculated only up to wave i and
-  # the percentage of variability explained is determined
-  cummulativePV <- c()
-  for(i in 1:nComponents){
-    designMatrix <- waves[,1:i]
-    linearModel <- lm(vData ~ designMatrix)
-    fittedValues <- predict(linearModel)
-    cummulativePV[i] <- PV(vData, fittedValues)
-  }
+
+  # The percentage of variability explained up to wave i is determined
+  cumulativePV <- sapply(1:nComponents, function(x){PV(vData, predict(lm(vData ~ waves[,1:x])))})
 
   # individual percentage of variability is the part that adds to the whole
-  return(c(cummulativePV[1], diff(cummulativePV)))
+  return(c(cumulativePV[1], diff(cumulativePV)))
 }
 
 ################################################################################
 # Internal function: to build a sequence of equally time points spaced
 #                    in range [0,2*pi).
 # Arguments:
-#   n: secuence length.
+#   nObs: secuence length.
 ################################################################################
-seqTimes <- function(n){
-  return(seq(0, 2*pi, length.out = n+1)[1:n])
-}
-
-################################################################################
-# Internal function: to compute the angular mean.
-# Arguments:
-#   angles: input vector of angles.
-################################################################################
-angularMean <- function(angles){
-  return(atan2(sum(sin(angles)), sum(cos(angles))))
+seqTimes <- function(nObs){
+  return(seq(0, 2*pi, length.out = nObs+1)[1:nObs])
 }
 
 ################################################################################
