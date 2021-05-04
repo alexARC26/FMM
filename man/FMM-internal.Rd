@@ -21,7 +21,6 @@
 \alias{seqTimes}
 \alias{calculateCosPhi}
 \alias{getApply}
-\alias{replicateGrid}
 \alias{addShowMethod}
 
 \title{Internal functions for the 'FMM' package.}
