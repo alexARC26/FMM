@@ -206,7 +206,8 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   fittedFMM@alpha <- getAlpha(fittedFMM)[explainedVarOrder]
   fittedFMM@beta <- getBeta(fittedFMM)[explainedVarOrder]
   fittedFMM@omega <- getOmega(fittedFMM)[explainedVarOrder]
-  fittedFMM@R2 <- getR2(fittedFMM)[explainedVarOrder]
+  fittedFMM@R2 <- PVj(getData(fittedFMM), timePoints, getAlpha(fittedFMM), getBeta(fittedFMM),
+                      getOmega(fittedFMM))
 
   # Restricted algorithm may find models with A<0
   if(any(getA(fittedFMM) < 0)) {
