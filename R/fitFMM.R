@@ -117,9 +117,6 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   omegaMax <- 1
   omegaGrid <- exp(seq(log(omegaMin),log(omegaMax),length.out = lengthOmegaGrid))
 
-  staticComponents <- NULL
-  objectFMM <- NULL
-
   betaOmegaRestrictions <- sort(betaOmegaRestrictions)
 
   if(showTime) time.ini <- Sys.time()
@@ -129,7 +126,6 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     n <- length(vData)
     if(n %% nPeriods != 0) stop("Data length is not a multiple of nPeriods")
     dataMatrix <- matrix(vData, nrow = nPeriods, ncol = n/nPeriods, byrow = TRUE)
-    #vDataAnt <- vData
     summarizedData <- apply(dataMatrix, 2, mean)
   } else {
     summarizedData <- vData
@@ -148,12 +144,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   }
 
   # Used apply function for compute FMM models
-  if(length(unique(betaOmegaRestrictions)) != nback && !parallelize){
-    usedApply_Cluster <- getApply(parallelize = TRUE, nCores = 1)
-  }else{
-    usedApply_Cluster <- getApply(parallelize = parallelize)
-  }
-
+  usedApply_Cluster <- getApply(parallelize = parallelize)
   usedApply <- usedApply_Cluster[[1]]
 
   ### fitFMM_unit
@@ -208,17 +199,18 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   fittedFMM@nPeriods <- nPeriods
   fittedFMM@data <- vData
 
-  explainedVarOrder <- order(fittedFMM@R2,decreasing = TRUE)
+  # Reorder components by explained variability
+  explainedVarOrder <- order(getR2(fittedFMM),decreasing = TRUE)
 
-  fittedFMM@A <- fittedFMM@A[explainedVarOrder]
-  fittedFMM@alpha <- fittedFMM@alpha[explainedVarOrder]
-  fittedFMM@beta <- fittedFMM@beta[explainedVarOrder]
-  fittedFMM@omega <- fittedFMM@omega[explainedVarOrder]
-  fittedFMM@R2 <- fittedFMM@R2[explainedVarOrder]
+  fittedFMM@A <- getA(fittedFMM)[explainedVarOrder]
+  fittedFMM@alpha <- getAlpha(fittedFMM)[explainedVarOrder]
+  fittedFMM@beta <- getBeta(fittedFMM)[explainedVarOrder]
+  fittedFMM@omega <- getOmega(fittedFMM)[explainedVarOrder]
+  fittedFMM@R2 <- PVj(getData(fittedFMM), timePoints, getAlpha(fittedFMM), getBeta(fittedFMM),
+                      getOmega(fittedFMM))
 
   # Restricted algorithm may find models with A<0
-  needFix <- which(fittedFMM@A < 0)
-  if(length(needFix)>0) {
+  if(any(getA(fittedFMM) < 0)) {
     stop("Invalid solution: check function input parameters.")
   }
 

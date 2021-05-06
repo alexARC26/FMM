@@ -18,7 +18,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
                                           length.out = lengthOmegaGrid)),
                       numReps = 3, usedApply = getApply(FALSE)[[1]]){
 
-  n <- length(vData)
+  nObs <- length(vData)
   grid <- expand.grid(alphaGrid, omegaGrid)
   step1OutputNames <- c("M","A","alpha","beta","omega","RSS")
 
@@ -40,7 +40,7 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
                       timePoints = timePoints, omegaMax = omegaMax)
   parFinal <- nelderMead$par
-  SSE <- nelderMead$value*n
+  SSE <- nelderMead$value*nObs
 
   # alpha and beta between 0 and 2pi
   parFinal[3] <- parFinal[3]%%(2*pi)

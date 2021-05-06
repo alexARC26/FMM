@@ -8,10 +8,8 @@
 #   PV:              percentage of variability explained.
 #   PVj:             percentage of variability explained by each component of
 #                    FMM model.
-#   angularmean:     to compute the angular mean.
 #   seqTimes:        to build a sequence of equally time points spaced in range
 #                    [0,2*pi].
-#   replicateGrid:   to replicate a grid, which is returned as a list.
 #   calculateCosPhi: to calculate components' cos(phi(t)).
 #   getApply:        returns the parallelized apply function depending on the OS.
 ################################################################################
@@ -58,7 +56,6 @@ step1FMM <- function(alphaOmegaParameters, vData, timePoints) {
            omegaParameter, residualSS))
 }
 
-
 ################################################################################
 # Internal function: to find the optimal initial parameter estimation
 # Arguments:
@@ -75,7 +72,7 @@ bestStep1 <- function(vData, step1){
 
   maxVData <- max(vData)
   minVData <- min(vData)
-  n <- length(vData)
+  nObs <- length(vData)
 
   # iterative search: go through rows ordered step 1
   #    until the first one that verifies the stability conditions
@@ -85,10 +82,7 @@ bestStep1 <- function(vData, step1){
     # parameters
     mParameter <- step1[orderedModelParameters[i], "M"]
     aParameter <- step1[orderedModelParameters[i], "A"]
-    alphaParameter <- step1[orderedModelParameters[i], "alpha"]
-    betaParameter <- step1[orderedModelParameters[i], "beta"]
-    omegaParameter <- step1[orderedModelParameters[i], "omega"]
-    sigma <- sqrt(step1[orderedModelParameters[i], "RSS"]*n/(n-5))
+    sigma <- sqrt(step1[orderedModelParameters[i], "RSS"]*nObs/(nObs-5))
 
     # stability conditions
     amplitudeUpperBound <- mParameter + aParameter
@@ -124,14 +118,14 @@ bestStep1 <- function(vData, step1){
 ################################################################################
 step2FMM <- function(parameters, vData, timePoints, omegaMax){
 
-  n <- length(timePoints)
+  nObs <- length(timePoints)
 
   # FMM model and residual sum of squares
   modelFMM <- parameters[1] + parameters[2] *
     cos(parameters[4]+2*atan2(parameters[5]*sin((timePoints - parameters[3])/2),
                                 cos((timePoints - parameters[3])/2)))
-  residualSS <- sum((modelFMM - vData)^2)/n
-  sigma <- sqrt(residualSS*n/(n - 5))
+  residualSS <- sum((modelFMM - vData)^2)/nObs
+  sigma <- sqrt(residualSS*nObs/(nObs - 5))
 
   # When amplitude condition is valid, it returns RSS
   # else it returns infinite.
@@ -142,7 +136,7 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
 
   # Other integrity conditions that must be met
   rest3 <- parameters[2] > 0  # A > 0
-  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax # omega > 0 and omega <= omegaMax
+  rest4 <- parameters[5] > 0  &  parameters[5] <= omegaMax # omega in (0, omegaMax]
   if(rest1 & rest2 & rest3 & rest4)
     return(residualSS)
   else
@@ -156,9 +150,8 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
 #   vData: data to be fitted an FMM model.
 #   pred: fitted values.
 ################################################################################
-PV <- function(vData,pred){
-  meanVData <- mean(vData)
-  return(1 - sum((vData-pred)^2)/sum((vData-meanVData)^2))
+PV <- function(vData, pred){
+  return(1 - sum((vData - pred)^2)/sum((vData - mean(vData))^2))
 }
 
 ################################################################################
@@ -170,65 +163,26 @@ PV <- function(vData,pred){
 #   alpha, beta, omega: vectors of corresponding parameter estimates.
 ################################################################################
 PVj <- function(vData, timePoints, alpha, beta, omega){
-
-  # fitted values of each wave
+  # Fitted values of each wave
   nComponents <- length(alpha)
-  w <- list()
-  for(i in 1:nComponents){
-    w[[i]] <- cos(beta[i] + 2*atan(omega[i]*tan((timePoints-alpha[i])/2)))
-  }
+  waves <- calculateCosPhi(alpha = alpha, beta = beta, omega = omega,
+                           timePoints = timePoints)
 
-  # The fitting is recalculated only up to wave i and
-  # the percentage of variability explained is determined
-  PV_hasta <- c()
-  for(i in 1:nComponents){
-    M <- matrix(unlist(w[1:i]),ncol=i)
-    regresion <- lm(vData ~ M)
-    predichos <- predict(regresion)
-    PV_hasta[i] <- PV(vData,predichos)
-  }
+  # The percentage of variability explained up to wave i is determined
+  cumulativePV <- sapply(1:nComponents, function(x){PV(vData, predict(lm(vData ~ waves[,1:x])))})
 
   # individual percentage of variability is the part that adds to the whole
-  PV_individual <- PV_hasta
-  for(i in 2:nComponents){
-    PV_individual[i] <- PV_hasta[i]-sum(PV_individual[1:(i-1)])
-  }
-
-  return(PV_individual)
-
+  return(c(cumulativePV[1], diff(cumulativePV)))
 }
 
 ################################################################################
 # Internal function: to build a sequence of equally time points spaced
-#                    in range [0,2*pi].
+#                    in range [0,2*pi).
 # Arguments:
-#   n: secuence length.
+#   nObs: secuence length.
 ################################################################################
-seqTimes <- function(n){
-  timePoints<-seq(0,2*pi,by=2*pi/n)
-  timePoints<-timePoints[-length(timePoints)]
-  return(timePoints)
-}
-
-################################################################################
-# Internal function: to compute the angular mean.
-# Arguments:
-#   angles: input vector of angles.
-################################################################################
-angularmean <- function(angles){
-  n <- length(angles)
-  a.mean <- atan2(sum(sin(angles)),sum(cos(angles)))
-  return(a.mean)
-}
-
-################################################################################
-# Internal function: to replicate a grid, which is returned as a list.
-# Arguments:
-#   grid: grid to replicate.
-#   nback: times the grid is going to be replicated.
-################################################################################
-replicateGrid <- function(grid, nback){
-  return(replicate(n = nback, grid, simplify = FALSE))
+seqTimes <- function(nObs){
+  return(seq(0, 2*pi, length.out = nObs+1)[1:nObs])
 }
 
 ################################################################################
@@ -249,7 +203,7 @@ calculateCosPhi <- function(alpha, beta, omega, timePoints){
 # Internal function: returns the parallelized apply function depending on the OS.
 # Returns the apply function to be used.
 ################################################################################
-getApply <- function(parallelize = FALSE, nCores = min(12, parallel::detectCores() - 1)){
+getApply <- function(parallelize = FALSE){
 
   getApply_Rbase <- function(){
     usedApply <- function(FUN, X, ...) t(apply(X = X, MARGIN = 1, FUN = FUN, ...))
@@ -269,6 +223,8 @@ getApply <- function(parallelize = FALSE, nCores = min(12, parallel::detectCores
     }
     return(usedApply)
   }
+
+  nCores <- min(12, parallel::detectCores() - 1)
 
   if(parallelize){
     # different ways to implement parallelization depending on OS:
