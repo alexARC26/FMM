@@ -13,8 +13,6 @@
 #' @param from A numeric value which contains the initial time point of the simulated data. By default, it is 0.
 #' @param to A numeric value which contains the final time point of the simulated data. By default, it is \eqn{2\pi}.
 #' @param length.out A non-negative number wich contains the desired length of the simulation. By default, it is 100.
-#' @param timePoints A numeric vector which contains the time points at which the data will be simulated. By default, it is sequence of equally spaced values from \code{from} to \code{to} of length \code{length.out}. The \code{from},
-#'  \code{to} and \code{length.out} arguments will be ignored when \code{timePoints} will be manually established.
 #' @param plot A logical value indicating whether the simulated data should be drawn on a plot. By default, it is \code{TRUE}.
 #' @param outvalues A logical value indicating whether the numerical simulation should be return. By default, it is \code{TRUE}.
 #' @param sigmaNoise A non-negative number which contains the standard deviation of the gaussian noise to be added. Its default value is zero equivalent to a simulation set-up without noise.

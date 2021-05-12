@@ -17,7 +17,7 @@ Individual contribution to the fitted values of each FMM wave. It is a \code{lis
 }
 \examples{
 ## Generate example data:
-fmm2.data <- generateFMM(M = 0, A = rep(2,1),
+fmm2.data <- generateFMM(M = 0, A = rep(1, 2),
                          alpha = c(1.5, 3.4), beta = c(0.2, 2.3), omega = c(0.1, 0.2),
                          plot = FALSE, outvalues = TRUE,
                          sigmaNoise = 0.5) # add a gaussian noise with sigma = 0.5
