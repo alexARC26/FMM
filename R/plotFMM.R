@@ -132,7 +132,9 @@ plotFMM <- function(objFMM, components = FALSE, plotAlongPeriods = FALSE,
     title <- ifelse(textExtra != "", paste("Fitted FMM model",textExtra,sep = " - "),"Fitted FMM model")
 
     if(!use_ggplot2){
-      plot(1:nObs, vData, xlab = "Time", ylab = "Response", main = title, xaxt = "n")
+      yLimits<-c(min(vData,getFittedValues(objFMM)), max(vData,getFittedValues(objFMM)))
+      plot(1:nObs, vData, xlab = "Time", ylab = "Response", main = title, xaxt = "n",
+           ylim = yLimits)
       if(plotAlongPeriods){
         points(1:nObs, rep(getFittedValues(objFMM), nPeriods), type = "l", col = 2, lwd = 2)
       }else{
