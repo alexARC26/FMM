@@ -76,14 +76,20 @@ plotFMM <- function(objFMM, components = FALSE, plotAlongPeriods = FALSE,
     timePoints <- getTimePoints(objFMM)
   }
 
-  col = 2:(length(getAlpha(objFMM))+1)
-
   significantTimePoints <- round(c(1, nObs*0.25, nObs*0.5, nObs*0.75, nObs))
 
   # Components plot: if there is more than one period, just the data from the first period will be plotted
   if(components){
     title <- ifelse(textExtra != "", paste("Components FMM", textExtra, sep = " - "),"Components FMM")
     nComponents <- length(getAlpha(objFMM))
+    # With more than 9 components, the selection of colors must be expanded
+    if(nComponents > 9){
+      colorsForComponents <- grDevices::colorRampPalette(RColorBrewer::brewer.pal(9, "Set1"))(nComponents)
+    }else{
+      colorsForComponents <- ifelse(rep(nComponents>3,nComponents),
+                                    RColorBrewer::brewer.pal(nComponents, "Set1"),
+                                    RColorBrewer::brewer.pal(3, "Set1"))
+    }
     componentNames<-paste("Wave ", 1:nComponents, sep = "")
 
     predicted <- extractWaves(objFMM)
@@ -93,11 +99,11 @@ plotFMM <- function(objFMM, components = FALSE, plotAlongPeriods = FALSE,
       plot(1:nObs, vData, ylim = yLimits, xlab = "Time", ylab = "Response",
            main = title, type = "n", xaxt = "n")
       for(i in 1:nComponents){
-        points(1:nObs, predicted[[i]], type = "l", lwd = 2, col = col[i])
+        points(1:nObs, predicted[[i]], type = "l", lwd = 2, col = colorsForComponents[i])
       }
       axis(1, las = 1, at = significantTimePoints,
            labels = parse(text=paste("t[",significantTimePoints, "]", sep = "")))
-      if(legendInComponentsPlot) legend("topright", legend = componentNames, col = col, lty = 1)
+      if(legendInComponentsPlot) legend("topright", legend = componentNames, col = colorsForComponents, lty = 1)
     } else {
       requireNamespace("ggplot2", quietly = TRUE)
       requireNamespace("RColorBrewer", quietly = TRUE)
@@ -105,15 +111,6 @@ plotFMM <- function(objFMM, components = FALSE, plotAlongPeriods = FALSE,
       df <- data.frame("Time" = rep(1:length(timePoints), nComponents),
                        "Response" = unlist(predicted),
                        "Components" = rep(componentNames, each = nObs))
-
-      # With more than 9 components, the selection of colors must be expanded
-      if(nComponents > 9){
-        colorsForComponents <- grDevices::colorRampPalette(RColorBrewer::brewer.pal(9, "Set1"))(nComponents)
-      }else{
-        colorsForComponents <- ifelse(rep(nComponents>3,nComponents),
-                                      RColorBrewer::brewer.pal(nComponents, "Set1"),
-                                      RColorBrewer::brewer.pal(3, "Set1"))
-      }
 
       plot<-ggplot2::ggplot(data = df, ggplot2::aes_(x=~Time, y=~Response, group =~ Components,
                                                      color =~ Components)) +
