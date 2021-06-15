@@ -49,7 +49,7 @@
 #'
 #' # Simulate data from a multicomponent FMM model with two FMM waves
 #' # both with amplitude parameter = 2
-#' generateFMM(M = 0, A = 2, alpha = c(1.5, 3.4), beta = c(0.2, 2.3), omega = c(0.1, 0.2))
+#' generateFMM(M = 0, A = rep(2, 2), alpha = c(1.5, 3.4), beta = c(0.2, 2.3), omega = c(0.1, 0.2))
 #'
 #'
 generateFMM <- function(M, A, alpha, beta, omega, from = 0, to = 2*pi, length.out = 200,

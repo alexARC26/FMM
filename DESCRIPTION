@@ -16,7 +16,7 @@ Imports:
     iterators,
     parallel,
     doParallel
-Suggests: ggplot2, RColorBrewer, testthat
+Suggests: ggplot2, RColorBrewer
 NeedsCompilation: no
 RoxygenNote: 7.1.1
 Packaged: 2021-01-11 22:31:59 UTC; Buhardilla

@@ -79,7 +79,7 @@ resid(object,...)
 
 \examples{
 ## Generate example data:
-fmm2.data <- generateFMM(0, 2, c(1.5, 3.4), c(0.2, 2.3), c(0.1, 0.2),
+fmm2.data <- generateFMM(0, rep(2, 2), c(1.5, 3.4), c(0.2, 2.3), c(0.1, 0.2),
                     plot = FALSE, outvalues = TRUE,
                     sigmaNoise = 0.5) # add a gaussian noise with sigma = 0.5
 
