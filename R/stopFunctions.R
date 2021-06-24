@@ -1,5 +1,5 @@
 ################################################################################
-# Internal functions to check the criterion convergence for the backfitting
+# Functions to check the criterion convergence for the backfitting
 #   algorithm.
 # Functions:
 #   alwaysFalse:  returns FALSE to force maxiter iterations.
@@ -19,7 +19,7 @@ alwaysFalse <- function(vData, pred, prevPred){
 }
 
 ################################################################################
-# Internal function: to check if the convergence criterion based on the
+# Convergence function: to check if the convergence criterion based on the
 #                    difference between the explained variability in two
 #                    consecutive iterations, is reached.
 # Arguments:
