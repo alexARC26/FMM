@@ -11,7 +11,7 @@
 setMethod("summary", signature(object="FMM"),function(object,...) {
 
   # Checks
-  if (class(object)!= "FMM"){stop("Object must be of class 'FMM'")}
+  if(!is(object, "FMM")){stop("Object must be of class 'FMM'")}
 
   x <- object
   nComp <- max(c(length(getAlpha(x)),length(getBeta(x)),length(getOmega(x))),na.rm = TRUE)
@@ -74,7 +74,7 @@ setMethod("summary", signature(object="FMM"),function(object,...) {
 #
 setMethod("coef", "FMM",function(object,...) {
   # Checks
-  if (class(object)!= "FMM"){stop("Object must be of class 'FMM'")}
+  if(!is(object, "FMM")){stop("Object must be of class 'FMM'")}
 
   x <- object
   nComp <- max(c(length(getAlpha(x)),length(getBeta(x)),length(getOmega(x))),na.rm = TRUE)
@@ -101,7 +101,7 @@ setMethod("coef", "FMM",function(object,...) {
 #
 setMethod("fitted", "FMM", function(object,...) {
   # Checks
-  if (class(object)!= "FMM"){stop("Object must be of class 'FMM'")}
+  if(!is(object, "FMM")){stop("Object must be of class 'FMM'")}
 
   x <- object
 
@@ -119,7 +119,7 @@ setMethod("fitted", "FMM", function(object,...) {
 #
 setMethod("resid", "FMM", function(object,...) {
   # Checks
-  if (class(object)!= "FMM"){stop("Object must be of class 'FMM'")}
+  if(!is(object, "FMM")){stop("Object must be of class 'FMM'")}
 
   x <- object
 
@@ -141,7 +141,7 @@ addShowMethod<-function(){
   setMethod("show", signature(object="FMM"),function(object) {
     #
     # Checks
-    if (class(object)!= "FMM"){stop("Object must be of class 'FMM'")}
+    if(!is(object, "FMM")){stop("Object must be of class 'FMM'")}
 
     text<-""
 
