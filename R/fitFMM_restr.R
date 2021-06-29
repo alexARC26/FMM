@@ -58,8 +58,8 @@ fitFMM_restr<-function(vData, nback, betaRestrictions, omegaRestrictions,
 
   designMatrix <- calculateCosPhi(alpha = alpha, beta = beta, omega = omega, timePoints = timePoints)
   regresion <- lm(vData ~ designMatrix)
-  M <- coefficients(regresion)[1]
-  A <- coefficients(regresion)[-1]
+  M <- as.vector(coefficients(regresion)[1])
+  A <- as.vector(coefficients(regresion)[-1])
 
   # Fitted values
   fittedFMMvalues <- predict(regresion)
@@ -215,8 +215,8 @@ fitFMM_restr_omega_beta<-function(vData, nback, betaRestrictions, omegaRestricti
   # A and M estimates are recalculated by linear regression
   cosPhi <- calculateCosPhi(alpha = alpha, beta = beta, omega = omega, timePoints = timePoints)
   regression <- lm(vData ~ cosPhi)
-  M <- coefficients(regression)[1]
-  A <- coefficients(regression)[-1]
+  M <- as.vector(coefficients(regression)[1])
+  A <- as.vector(coefficients(regression)[-1])
 
   # Fitted values
   fittedFMMvalues <- predict(regression)
