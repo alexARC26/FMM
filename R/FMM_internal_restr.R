@@ -90,7 +90,8 @@ backfittingRestr <- function(vData, omegas, nback, betaRestrictions,
       backFittingData <- vData - apply(as.matrix(fittedValuesPerComponent[,-j]), 1, sum)
       # component j fitting using fitFMM_unit_restr function
       fittedFMMPerComponent[[j]] <- fitFMM_unit_restr(backFittingData, omegas[j], timePoints = timePoints,
-                                                      lengthAlphaGrid = lengthAlphaGrid, alphaGrid = alphaGrid[[j]],
+                                                      lengthAlphaGrid = lengthAlphaGrid, 
+                                                      #alphaGrid = alphaGrid[[j]],
                                                       numReps = numReps)
       fittedValuesPerComponent[,j] <- getFittedValues(fittedFMMPerComponent[[j]])
     }
