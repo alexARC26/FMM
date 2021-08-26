@@ -96,7 +96,7 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
         previousPercentage <- completedPercentage
       }
     }
-    cat("|\n", paste(stopCriteria, nIter, sep = ""),"iteration(s) )","\n")
+    cat("|\n", paste(stopCriteria, nIter, sep = ""),"iteration(s))","\n")
   }
 
   alpha <- unlist(lapply(fittedFMMPerComponent, getAlpha))

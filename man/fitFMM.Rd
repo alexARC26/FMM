@@ -52,7 +52,7 @@ By default it is set to 24 possible values of omega, equally spaced between 0 an
 
 \item{parallelize}{\code{TRUE} to use parallelized procedure to fit FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to 12, or if the machine has less, the number of cores - 1.}
 
-\item{restrExactSolution}{\code{FALSE} to use an aproximated algorithm to fit the model (default). If \code{TRUE} is specified, an nearly exact solution is computed.}
+\item{restrExactSolution}{\code{FALSE} to use an aproximated algorithm to fit the FMM model with restrictions (default). If \code{TRUE} is specified, the exact solution is computed.}
 }
 \value{
 An S4 object of class \code{'FMM'} with information about the fitted model. The object contains the following slots:

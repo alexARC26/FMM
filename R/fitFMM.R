@@ -36,7 +36,7 @@
 #'
 #' @param parallelize \code{TRUE} to use parallelized procedure to fit FMM model. Its default value is \code{FALSE}. When it is \code{TRUE}, the number of cores to be used is equal to 12, or if the machine has less, the number of cores - 1.
 #'
-#' @param restrExactSolution \code{FALSE} to use an aproximated algorithm to fit the model (default). If \code{TRUE} is specified, an nearly exact solution is computed.
+#' @param restrExactSolution \code{FALSE} to use an aproximated algorithm to fit the FMM model with restrictions (default). If \code{TRUE} is specified, the exact solution is computed.
 #'
 #' @details
 #' Data will be collected over \code{nPeriods} periods. When \code{nPeriods > 1} the fitting is carried out by averaging the data collected
