@@ -68,6 +68,14 @@ fitFMM_restr<-function(vData, nback, betaRestrictions, omegaRestrictions,
   SSE <- sum((fittedFMMvalues-vData)^2)
   nIter <- getNIter(outMobius)
 
+  # Reorder components by explained variability
+  explainedVarOrder <- order(getR2(outMobius),decreasing = TRUE)
+
+  A <- A[explainedVarOrder]
+  alpha <- alpha[explainedVarOrder]
+  beta <- beta[explainedVarOrder]
+  omega <- omega[explainedVarOrder]
+
   # Returns an object of class FMM
   return(FMM(
     M = M,
@@ -223,6 +231,14 @@ fitFMM_restr_omega_beta<-function(vData, nback, betaRestrictions, omegaRestricti
 
   # Residual sum of squares
   SSE <- sum((fittedFMMvalues - vData)^2)
+
+  # Reorder components by explained variability
+  explainedVarOrder <- order(PVj(vData, timePoints, alpha, beta, omega),decreasing = TRUE)
+
+  A <- A[explainedVarOrder]
+  alpha <- alpha[explainedVarOrder]
+  beta <- beta[explainedVarOrder]
+  omega <- omega[explainedVarOrder]
 
   # Returns an object of class FMM
   return(FMM(

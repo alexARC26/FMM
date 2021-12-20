@@ -109,7 +109,7 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
                    nback = 1, betaOmegaRestrictions = 1:nback,
                    maxiter = nback, stopFunction = alwaysFalse,
                    lengthAlphaGrid = 48, lengthOmegaGrid = 24,
-                   numReps = 3, showProgress = TRUE, showTime = TRUE,
+                   numReps = 3, showProgress = TRUE, showTime = FALSE,
                    parallelize = FALSE, restrExactSolution = FALSE){
 
   alphaGrid <- seq(0, 2*pi, length.out = lengthAlphaGrid)
@@ -121,6 +121,11 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
 
   if(showTime) time.ini <- Sys.time()
 
+  # minimum number of observations for fitting
+  if(length(vData) < 5){
+    stop("The minimum number of observations should be 5")
+  }
+
   # If data has more than one period, it must be summarized
   if(nPeriods > 1){
     n <- length(vData)
@@ -129,6 +134,11 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
     summarizedData <- apply(dataMatrix, 2, mean)
   } else {
     summarizedData <- vData
+  }
+
+  # If data is constant
+  if(sd(vData,na.rm=TRUE) == 0){
+    stop("Data are constant")
   }
 
   # Generation of the time points
@@ -199,16 +209,6 @@ fitFMM <- function(vData, nPeriods = 1, timePoints = NULL,
   fittedFMM@nPeriods <- nPeriods
   fittedFMM@data <- vData
 
-  # Reorder components by explained variability
-  explainedVarOrder <- order(getR2(fittedFMM),decreasing = TRUE)
-
-  fittedFMM@A <- getA(fittedFMM)[explainedVarOrder]
-  fittedFMM@alpha <- getAlpha(fittedFMM)[explainedVarOrder]
-  fittedFMM@beta <- getBeta(fittedFMM)[explainedVarOrder]
-  fittedFMM@omega <- getOmega(fittedFMM)[explainedVarOrder]
-  fittedFMM@R2 <- PVj(getSummarizedData(fittedFMM), timePoints,
-                      getAlpha(fittedFMM), getBeta(fittedFMM),
-                      getOmega(fittedFMM))
 
   # Restricted algorithm may find models with A<0
   if(any(getA(fittedFMM) < 0)) {

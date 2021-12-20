@@ -113,6 +113,18 @@ fitFMM_back<-function(vData, nback, timePoints = seqTimes(length(vData)),
   # Residual sum of squares
   SSE <- sum((fittedFMMvalues - vData)^2)
 
+  # Reorder waves by explained variability
+  iPV <- sapply(1:nback, function(x){PV(vData, predict(lm(vData ~ cosPhi[,x])))})
+  waveOrder<-which.max(iPV)
+  while(length(waveOrder)<nback){
+     iPV <- sapply((1:nback)[-waveOrder], function(x){PV(vData, predict(lm(vData ~ cosPhi[,c(waveOrder,x)])))})
+     waveOrder<-c(waveOrder,(1:nback)[-waveOrder][which.max(iPV)])
+  }
+  A <- A[waveOrder]
+  alpha <- alpha[waveOrder]
+  beta <- beta[waveOrder]
+  omega <- omega[waveOrder]
+
   # Returns an object of class FMM.
   return(FMM(
     M = M,

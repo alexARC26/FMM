@@ -16,7 +16,7 @@ fitFMM(
   lengthOmegaGrid = 24,
   numReps = 3,
   showProgress = TRUE,
-  showTime = TRUE,
+  showTime = FALSE,
   parallelize = FALSE,
   restrExactSolution = FALSE
 )
