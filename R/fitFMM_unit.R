@@ -17,7 +17,6 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
                       omegaGrid = exp(seq(log(omegaMin), log(omegaMax),
                                           length.out = lengthOmegaGrid)),
                       numReps = 3, usedApply = getApply(FALSE)[[1]]){
-
   nObs <- length(vData)
   grid <- expand.grid(alphaGrid, omegaGrid)
   step1OutputNames <- c("M","A","alpha","beta","omega","RSS")
@@ -37,14 +36,28 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   bestPar <- bestStep1(vData, step1)
 
   ## Step 2: Nelder-Mead optimization. 'step2FMM' function is used.
-  nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-                      timePoints = timePoints, omegaMax = omegaMax)
-  parFinal <- nelderMead$par
-  SSE <- nelderMead$value*nObs
+  # nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
+  #                     timePoints = timePoints, omegaMax = omegaMax)
+  # parFinal <- nelderMead$par
+  # SSE <- nelderMead$value*nObs
+
+  # EXPERIMENTAL ---------------------
+  postOpt <- optim(par = bestPar[c(3, 5)], fn = step2FMMExp, vData = vData)
+  if(step2FMMExp(postOpt$par, vData) < step2FMMExp(bestPar[c(3, 5)], vData)){
+    t2 <- postOpt$par[1] + 2*atan(postOpt$par[2]*tan((timePoints-postOpt$par[1])/2))
+    dM <- cbind(rep(1, nObs), cos(t2), sin(t2))
+    mDeltaGamma <- solve(t(dM)%*%dM)%*%t(dM)%*%vData
+    optM <- mean(vData) - mDeltaGamma[2]*mean(cos(t2)) - mDeltaGamma[3]*mean(sin(t2))
+    yFit <- optM + mDeltaGamma[2]*cos(t2) + mDeltaGamma[3]*sin(t2)
+    optBeta <- atan2(-mDeltaGamma[3], mDeltaGamma[2]) + postOpt$par[1]
+    optA <- sqrt(sum(mDeltaGamma[2:3]^2))
+    optRSS <- sum((vData - yFit)^2)/nObs
+    parFinal <- c(optM, optA, postOpt$par[1]%%(2*pi), optBeta%%(2*pi), postOpt$par[2], optRSS)
+  }
 
   # alpha and beta between 0 and 2pi
-  parFinal[3] <- parFinal[3]%%(2*pi)
-  parFinal[4] <- parFinal[4]%%(2*pi)
+  # parFinal[3] <- parFinal[3]%%(2*pi)
+  # parFinal[4] <- parFinal[4]%%(2*pi)
 
   # the grid search is repeated numReps
   numReps <- numReps - 1
@@ -79,11 +92,25 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
       warning("FMM model may be no appropiate")
     }
 
-    ## Step 2: Nelder-Mead optimization
-    nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-                        timePoints = timePoints, omegaMax = omegaMax)
-    parFinal <- nelderMead$par
+    ## Step 2: Nelder-Mead optimization. 'step2FMM' function is used.
+    # nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
+    #                     timePoints = timePoints, omegaMax = omegaMax)
+    # parFinal <- nelderMead$par
+    # SSE <- nelderMead$value*nObs
 
+    # EXPERIMENTAL ---------------------
+    postOpt <- optim(par = bestPar[c(3, 5)], fn = step2FMMExp, vData = vData)
+    if(step2FMMExp(postOpt$par, vData) < step2FMMExp(bestPar[c(3, 5)], vData)){
+      t2 <- postOpt$par[1] + 2*atan(postOpt$par[2]*tan((timePoints-postOpt$par[1])/2))
+      dM <- cbind(rep(1, nObs), cos(t2), sin(t2))
+      mDeltaGamma <- solve(t(dM)%*%dM)%*%t(dM)%*%vData
+      optM <- mean(vData) - mDeltaGamma[2]*mean(cos(t2)) - mDeltaGamma[3]*mean(sin(t2))
+      yFit <- optM + mDeltaGamma[2]*cos(t2) + mDeltaGamma[3]*sin(t2)
+      optBeta <- atan2(-mDeltaGamma[3], mDeltaGamma[2]) + postOpt$par[1]
+      optA <- sqrt(sum(mDeltaGamma[2:3]^2))
+      optRSS <- sum((vData - yFit)^2)/nObs
+      parFinal <- c(optM, optA, postOpt$par[1], optBeta, postOpt$par[2])
+    }
     # alpha and beta between 0 and 2pi
     parFinal[3] <- parFinal[3] %% (2*pi)
     parFinal[4] <- parFinal[4] %% (2*pi)
@@ -92,7 +119,6 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   }
 
   names(parFinal) <- step1OutputNames[-6]
-
   # Returns an object of class FMM.
   fittedFMMvalues <- parFinal["M"] + parFinal["A"]*cos(parFinal["beta"] +
         2*atan(parFinal["omega"]*tan((timePoints-parFinal["alpha"])/2)))

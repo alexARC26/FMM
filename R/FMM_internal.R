@@ -108,6 +108,8 @@ bestStep1 <- function(vData, step1){
   return(step1[orderedModelParameters[i],])
 }
 
+
+
 ################################################################################
 # Internal function: second step of FMM fitting process
 # Arguments:
@@ -141,6 +143,11 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
     return(residualSS)
   else
     return(Inf)
+}
+
+#EXPERIMENTAL ---------------------
+step2FMMExp <- function(parameters, vData){
+  return(-logLikFMMWave(parameters, vData, 1))
 }
 
 ################################################################################
