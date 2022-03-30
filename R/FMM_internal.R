@@ -9,7 +9,7 @@
 #   PVj:             percentage of variability explained by each component of
 #                    FMM model.
 #   seqTimes:        to build a sequence of equally time points spaced in range
-#                    [0,2*pi].
+#                    [0,2*pi).
 #   calculateCosPhi: to calculate components' cos(phi(t)).
 #   getApply:        returns the parallelized apply function depending on the OS.
 ################################################################################
@@ -146,8 +146,8 @@ step2FMM <- function(parameters, vData, timePoints, omegaMax){
 }
 
 #EXPERIMENTAL ---------------------
-step2FMMExp <- function(parameters, vData){
-  return(-logLikFMMWave(parameters, vData, 1))
+step2FMMExp <- function(par, vData){
+  return(-logLikFMMWave(alphaOmegaParameters = par, vData = vData, 1))
 }
 
 ################################################################################

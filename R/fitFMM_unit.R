@@ -34,89 +34,12 @@ fitFMM_unit <- function(vData, timePoints = seqTimes(length(vData)),
   # minimizing Residual Sum of Squared with several stability conditions.
   # We use bestStep1 internal function
   bestPar <- bestStep1(vData, step1)
-
-  ## Step 2: Nelder-Mead optimization. 'step2FMM' function is used.
-  # nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-  #                     timePoints = timePoints, omegaMax = omegaMax)
-  # parFinal <- nelderMead$par
-  # SSE <- nelderMead$value*nObs
-
   # EXPERIMENTAL ---------------------
-  postOpt <- optim(par = bestPar[c(3, 5)], fn = step2FMMExp, vData = vData)
-  if(step2FMMExp(postOpt$par, vData) < step2FMMExp(bestPar[c(3, 5)], vData)){
-    t2 <- postOpt$par[1] + 2*atan(postOpt$par[2]*tan((timePoints-postOpt$par[1])/2))
-    dM <- cbind(rep(1, nObs), cos(t2), sin(t2))
-    mDeltaGamma <- solve(t(dM)%*%dM)%*%t(dM)%*%vData
-    optM <- mean(vData) - mDeltaGamma[2]*mean(cos(t2)) - mDeltaGamma[3]*mean(sin(t2))
-    yFit <- optM + mDeltaGamma[2]*cos(t2) + mDeltaGamma[3]*sin(t2)
-    optBeta <- atan2(-mDeltaGamma[3], mDeltaGamma[2]) + postOpt$par[1]
-    optA <- sqrt(sum(mDeltaGamma[2:3]^2))
-    optRSS <- sum((vData - yFit)^2)/nObs
-    parFinal <- c(optM, optA, postOpt$par[1]%%(2*pi), optBeta%%(2*pi), postOpt$par[2], optRSS)
-  }
+  postOpt <- optim(par = bestPar[c(3, 5)], fn = step2FMMExp, method = "L-BFGS-B",
+                   lower = c(0, 0.001), upper = c(2*pi, 0.99), vData = vData)
 
-  # alpha and beta between 0 and 2pi
-  # parFinal[3] <- parFinal[3]%%(2*pi)
-  # parFinal[4] <- parFinal[4]%%(2*pi)
-
-  # the grid search is repeated numReps
-  numReps <- numReps - 1
-  while(numReps > 0){
-
-    # new grid for alpha between 0 and 2pi
-    nAlphaGrid <- length(alphaGrid)
-    amplitudeAlphaGrid <- 1.5*mean(diff(alphaGrid))
-    alphaGrid <- seq(parFinal[3] - amplitudeAlphaGrid,
-                     parFinal[3] + amplitudeAlphaGrid, length.out = nAlphaGrid)
-    alphaGrid <- alphaGrid%%(2*pi)
-
-    # new grid for omega between 0 and omegaMax
-    nOmegaGrid <- length(omegaGrid)
-    amplitudeOmegaGrid <- 1.5*mean(diff(omegaGrid))
-    omegaGrid <- seq(max(omegaMin, parFinal[5] - amplitudeOmegaGrid),
-                     min(omegaMax, parFinal[5] + amplitudeOmegaGrid),
-                     length.out = nOmegaGrid)
-    grid <- as.matrix(expand.grid(alphaGrid,omegaGrid))
-
-    # Step 1: initial parameters
-    step1 <- usedApply(FUN = step1FMM, X = grid, vData = vData,
-                       timePoints = timePoints)
-    colnames(step1) <- step1OutputNames
-    prevBestPar <- bestPar
-    bestPar <- bestStep1(vData,step1)
-
-    # None satisfies the conditions
-    if(is.null(bestPar)){
-      bestPar <- prevBestPar
-      numReps <- 0
-      warning("FMM model may be no appropiate")
-    }
-
-    ## Step 2: Nelder-Mead optimization. 'step2FMM' function is used.
-    # nelderMead <- optim(par = bestPar[1:5], fn = step2FMM, vData = vData,
-    #                     timePoints = timePoints, omegaMax = omegaMax)
-    # parFinal <- nelderMead$par
-    # SSE <- nelderMead$value*nObs
-
-    # EXPERIMENTAL ---------------------
-    postOpt <- optim(par = bestPar[c(3, 5)], fn = step2FMMExp, vData = vData)
-    if(step2FMMExp(postOpt$par, vData) < step2FMMExp(bestPar[c(3, 5)], vData)){
-      t2 <- postOpt$par[1] + 2*atan(postOpt$par[2]*tan((timePoints-postOpt$par[1])/2))
-      dM <- cbind(rep(1, nObs), cos(t2), sin(t2))
-      mDeltaGamma <- solve(t(dM)%*%dM)%*%t(dM)%*%vData
-      optM <- mean(vData) - mDeltaGamma[2]*mean(cos(t2)) - mDeltaGamma[3]*mean(sin(t2))
-      yFit <- optM + mDeltaGamma[2]*cos(t2) + mDeltaGamma[3]*sin(t2)
-      optBeta <- atan2(-mDeltaGamma[3], mDeltaGamma[2]) + postOpt$par[1]
-      optA <- sqrt(sum(mDeltaGamma[2:3]^2))
-      optRSS <- sum((vData - yFit)^2)/nObs
-      parFinal <- c(optM, optA, postOpt$par[1], optBeta, postOpt$par[2])
-    }
-    # alpha and beta between 0 and 2pi
-    parFinal[3] <- parFinal[3] %% (2*pi)
-    parFinal[4] <- parFinal[4] %% (2*pi)
-
-    numReps <- numReps - 1
-  }
+  parametersRSSandFittedValues <- determineNoiseParameters(postOpt$par, vData)
+  parFinal <- parametersRSSandFittedValues[["par"]]
 
   names(parFinal) <- step1OutputNames[-6]
   # Returns an object of class FMM.
